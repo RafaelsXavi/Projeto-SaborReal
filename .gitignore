@@ -1,1 +1,22 @@
-node_modules
+﻿node_modules
+.pnpm-store
+
+# builds
+**/dist
+**/.tsbuildinfo
+
+# env
+.env
+.env.*
+!.env.example
+
+# logs
+*.log
+
+# coverage
+coverage
+
+# misc
+.DS_Store
+node_modules.pnpm.bak
+.npm-cache

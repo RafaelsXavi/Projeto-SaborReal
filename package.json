@@ -1,17 +1,19 @@
 {
   "name": "projeto-saborreal",
   "version": "1.0.5",
-  "main": "src/server.js",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "scripts": {
-    "dev": "node --watch src/server.js"
-  },
-  "type": "module",
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "description": "",
-  "dependencies": {
-    "express": "^5.2.1"
+    "dev": "npm -w @saborreal/api run dev",
+    "dev:api": "npm -w @saborreal/api run dev",
+    "build": "npm -ws run build",
+    "typecheck": "npm -ws run typecheck",
+    "lint": "biome check .",
+    "format": "biome format . --write",
+    "test": "npm -w @saborreal/api test"
   },
   "devDependencies": {
     "@biomejs/biome": "2.3.8"
