@@ -17,6 +17,11 @@ const envSchema = z
     LOG_LEVEL: z.string().default('info'),
     TRUST_PROXY: boolFromString.default(false),
     CORS_ORIGINS: z.string().optional(),
+
+    // DBs
+    DATABASE_URL: z.string().url().optional(),
+    MONGO_URI: z.string().optional(),
+    MONGO_DB: z.string().default('saborreal'),
   })
   .passthrough();
 
@@ -31,4 +36,8 @@ export const env = {
     .split(',')
     .map((s) => s.trim())
     .filter(Boolean),
+
+  DATABASE_URL: parsed.DATABASE_URL,
+  MONGO_URI: parsed.MONGO_URI,
+  MONGO_DB: parsed.MONGO_DB,
 };

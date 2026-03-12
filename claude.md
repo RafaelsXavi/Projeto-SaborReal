@@ -58,3 +58,11 @@ Atribuicao do motoboy (accept) deve ser atomica.
 - Helmet habilitado.
 - `trust proxy` configurado corretamente em producao.
 - Secrets somente via env (nunca commitar `.env`).
+## Bancos (Postgres + Mongo)
+- Postgres: fonte de verdade para autenticacao, usuarios, enderecos (PII), pedidos, itens do pedido, historico/auditoria.
+- Mongo: somente dados sem PII (ex: catalogo/cardapio, configuracoes de apresentacao). Nunca persistir endereco/telefone/nome do cliente no Mongo.
+
+Regras:
+- Nao duplicar PII entre bancos.
+- Todas as consultas ao Mongo devem ser por IDs/keys nao sensiveis.
+- Eventos/auditoria e trilha de status devem ficar no Postgres.\n

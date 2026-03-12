@@ -68,6 +68,18 @@ await run('RBAC: admin surface requires authentication', async () => {
   });
 });
 
+await run(
+  'GET /healthz/readyz returns 503 when DBs are not configured',
+  async () => {
+    await withServer(async (baseUrl) => {
+      const res = await fetch(`${baseUrl}/healthz/readyz`);
+      assert.equal(res.status, 503);
+      const body = await res.json();
+      assert.equal(body.error?.code, 'NOT_READY');
+    });
+  },
+);
+
 if (!process.exitCode) {
   console.log('all security smoke tests passed');
 }
