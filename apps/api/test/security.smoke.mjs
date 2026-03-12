@@ -36,13 +36,16 @@ await run('GET /healthz returns ok', async () => {
   });
 });
 
-await run('security headers: X-Powered-By disabled and Helmet enabled', async () => {
-  await withServer(async (baseUrl) => {
-    const res = await fetch(`${baseUrl}/healthz`);
-    assert.equal(res.headers.get('x-powered-by'), null);
-    assert.equal(res.headers.get('x-content-type-options'), 'nosniff');
-  });
-});
+await run(
+  'security headers: X-Powered-By disabled and Helmet enabled',
+  async () => {
+    await withServer(async (baseUrl) => {
+      const res = await fetch(`${baseUrl}/healthz`);
+      assert.equal(res.headers.get('x-powered-by'), null);
+      assert.equal(res.headers.get('x-content-type-options'), 'nosniff');
+    });
+  },
+);
 
 await run('CORS blocks non-allowlisted origins', async () => {
   await withServer(async (baseUrl) => {
