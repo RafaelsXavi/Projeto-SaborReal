@@ -36,15 +36,12 @@
       context: .
       dockerfile: apps/api/Dockerfile
     container_name: saborreal-api
+    env_file:
+      - .env
     environment:
-      NODE_ENV: development
-      PORT: 3001
-      LOG_LEVEL: info
-      TRUST_PROXY: "false"
-      CORS_ORIGINS: ""
+      # Override host-based URLs to use Docker service names
       DATABASE_URL: postgres://postgres:postgres@postgres:5432/saborreal
       MONGO_URI: mongodb://mongo:27017
-      MONGO_DB: saborreal
     ports:
       - "3001:3001"
     depends_on:
