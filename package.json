@@ -13,7 +13,11 @@
     "typecheck": "npm -ws run typecheck",
     "lint": "biome check .",
     "format": "biome format . --write",
-    "test": "npm -w @saborreal/api test"
+    "test": "npm -w @saborreal/api test",
+    "docker:up": "docker compose up -d --build",
+    "docker:down": "docker compose down",
+    "docker:logs": "docker compose logs -f api",
+    "docker:ps": "docker compose ps"
   },
   "devDependencies": {
     "@biomejs/biome": "2.3.8"
