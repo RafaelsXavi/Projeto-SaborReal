@@ -21,3 +21,6 @@ coverage
 node_modules.pnpm.bak
 .npm-cache
 .docker-config
+
+# Local seed project (contains build artifacts/node_modules)
+Seeds-SaborReal-main/
