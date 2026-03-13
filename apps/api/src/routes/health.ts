@@ -1,4 +1,5 @@
-﻿import { Router } from 'express';
+import { Router } from 'express';
+import { env } from '../config/env.js';
 import { mongoPing, pgPing } from '../db/index.js';
 import { AppError } from '../middleware/error.js';
 
@@ -11,7 +12,10 @@ healthRouter.get('/', (_req, res) => {
 // Readiness: validates external dependencies. Keep /healthz lightweight.
 healthRouter.get('/readyz', async (_req, res, next) => {
   try {
-    const [pg, mongo] = await Promise.allSettled([pgPing(), mongoPing()]);
+    const [pg, mongo] = await Promise.allSettled([
+      pgPing(),
+      env.MONGO_URI ? mongoPing() : Promise.resolve({ ok: true as const }),
+    ]);
 
     const pgOk = pg.status === 'fulfilled' && pg.value.ok;
     const mongoOk = mongo.status === 'fulfilled' && mongo.value.ok;

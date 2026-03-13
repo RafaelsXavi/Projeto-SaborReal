@@ -18,6 +18,21 @@ const envSchema = z
     TRUST_PROXY: boolFromString.default(false),
     CORS_ORIGINS: z.string().optional(),
 
+    // Auth (JWT)
+    JWT_SECRET: z.string().optional(),
+    JWT_ISSUER: z.string().default('saborreal-api'),
+    JWT_AUDIENCE: z.string().default('saborreal-web'),
+    ACCESS_TOKEN_TTL_SECONDS: z.coerce
+      .number()
+      .int()
+      .min(60)
+      .default(15 * 60),
+    ACCESS_TOKEN_COOKIE_NAME: z.string().default('sr_at'),
+    REFRESH_TOKEN_TTL_DAYS: z.coerce.number().int().min(1).default(30),
+    REFRESH_TOKEN_COOKIE_NAME: z.string().default('sr_rt'),
+    CSRF_COOKIE_NAME: z.string().default('sr_csrf'),
+    DEV_AUTH_ENABLED: boolFromString.optional(),
+
     // DBs
     DATABASE_URL: z.string().url().optional(),
     MONGO_URI: z.string().optional(),
@@ -26,6 +41,21 @@ const envSchema = z
   .passthrough();
 
 const parsed = envSchema.parse(process.env);
+
+const devAuthEnabled =
+  typeof parsed.DEV_AUTH_ENABLED === 'boolean'
+    ? parsed.DEV_AUTH_ENABLED
+    : parsed.NODE_ENV !== 'production';
+
+const jwtSecret =
+  parsed.JWT_SECRET ??
+  (parsed.NODE_ENV === 'production' ? undefined : 'dev-insecure-secret');
+
+if (!jwtSecret) {
+  throw new Error(
+    'Missing JWT_SECRET (required when NODE_ENV=production). Set it to a long random value.',
+  );
+}
 
 export const env = {
   NODE_ENV: parsed.NODE_ENV,
@@ -36,6 +66,16 @@ export const env = {
     .split(',')
     .map((s) => s.trim())
     .filter(Boolean),
+
+  JWT_SECRET: jwtSecret,
+  JWT_ISSUER: parsed.JWT_ISSUER,
+  JWT_AUDIENCE: parsed.JWT_AUDIENCE,
+  ACCESS_TOKEN_TTL_SECONDS: parsed.ACCESS_TOKEN_TTL_SECONDS,
+  ACCESS_TOKEN_COOKIE_NAME: parsed.ACCESS_TOKEN_COOKIE_NAME,
+  REFRESH_TOKEN_TTL_DAYS: parsed.REFRESH_TOKEN_TTL_DAYS,
+  REFRESH_TOKEN_COOKIE_NAME: parsed.REFRESH_TOKEN_COOKIE_NAME,
+  CSRF_COOKIE_NAME: parsed.CSRF_COOKIE_NAME,
+  DEV_AUTH_ENABLED: devAuthEnabled,
 
   DATABASE_URL: parsed.DATABASE_URL,
   MONGO_URI: parsed.MONGO_URI,

@@ -45,7 +45,7 @@ Estados sugeridos:
 Atribuicao do motoboy (accept) deve ser atomica.
 
 ## Execucao (monorepo)
-- `pnpm dev` roda a API.
+- `npm run dev` roda a API.
 - Workspace: `apps/*` e `packages/*`.
 
 ## Estrutura
@@ -58,6 +58,11 @@ Atribuicao do motoboy (accept) deve ser atomica.
 - Helmet habilitado.
 - `trust proxy` configurado corretamente em producao.
 - Secrets somente via env (nunca commitar `.env`).
+
+## Estado atual (importante)
+- Auth ainda e um stub: a API usa `requireAuth()` / `requireRole()`, mas `req.auth` nao e populado (falta implementar sessao/JWT + middleware).
+- Smoke tests de seguranca existem em `apps/api/test/security.smoke.mjs` e rodam via `npm test`.
+
 ## Bancos (Postgres + Mongo)
 - Postgres: fonte de verdade para autenticacao, usuarios, enderecos (PII), pedidos, itens do pedido, historico/auditoria.
 - Mongo: somente dados sem PII (ex: catalogo/cardapio, configuracoes de apresentacao). Nunca persistir endereco/telefone/nome do cliente no Mongo.
@@ -65,4 +70,4 @@ Atribuicao do motoboy (accept) deve ser atomica.
 Regras:
 - Nao duplicar PII entre bancos.
 - Todas as consultas ao Mongo devem ser por IDs/keys nao sensiveis.
-- Eventos/auditoria e trilha de status devem ficar no Postgres.\n
+- Eventos/auditoria e trilha de status devem ficar no Postgres.

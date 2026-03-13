@@ -12,7 +12,9 @@
       "!!**/node_modules",
       "!!**/node_modules.pnpm.bak",
       "!!**/.npm-cache",
-      "!!**/dist"
+      "!!**/dist",
+      "!!Seeds-SaborReal-main",
+      "!!**/.next"
     ]
   },
   "formatter": {

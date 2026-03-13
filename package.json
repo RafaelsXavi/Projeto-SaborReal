@@ -14,10 +14,17 @@
     "lint": "biome check .",
     "format": "biome format . --write",
     "test": "npm -w @saborreal/api test",
+    "test:db": "npm -w @saborreal/api run test:db",
+    "db:migrate": "npm -w @saborreal/api run db:migrate",
+    "ci:biome": "biome ci . --error-on-warnings --max-diagnostics=none",
+    "ci:check": "npm run ci:biome && npm run typecheck && npm test",
+    "ci:web:build": "npm -w @saborreal/web run build",
     "docker:up": "docker compose up -d --build",
     "docker:down": "docker compose down",
     "docker:logs": "docker compose logs -f api",
-    "docker:ps": "docker compose ps"
+    "docker:ps": "docker compose ps",
+    "dev:web": "npm -w @saborreal/web run dev",
+    "dev:all": "npm -ws --if-present --parallel run dev"
   },
   "devDependencies": {
     "@biomejs/biome": "2.3.8"

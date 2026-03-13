@@ -5,10 +5,14 @@
   "main": "dist/server.js",
   "scripts": {
     "dev": "tsx watch src/server.ts",
+    "dev:worker": "tsx watch src/worker.ts",
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
+    "db:migrate": "tsx src/scripts/migrate.ts",
+    "db:migrate:prod": "node dist/scripts/migrate.js",
     "start": "node dist/server.js",
-    "test": "npm run build \u0026\u0026 node test/security.smoke.mjs"
+    "test": "npm run build \u0026\u0026 node test/security.smoke.mjs",
+    "test:db": "npm run build \u0026\u0026 node --import dotenv/config test/pg.smoke.mjs"
   },
   "dependencies": {
     "@saborreal/shared": "file:../../packages/shared",

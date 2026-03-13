@@ -10,6 +10,7 @@ import { env } from './config/env.js';
 import { logger } from './config/logger.js';
 import { AppError, errorHandler, notFoundHandler } from './middleware/error.js';
 import { requestId } from './middleware/requestId.js';
+import { csrfProtection, jwtAuth } from './modules/auth/auth.middleware.js';
 import { routes } from './routes/index.js';
 
 export function createApp() {
@@ -64,6 +65,8 @@ export function createApp() {
   app.use(express.json({ limit: '200kb' }) as unknown as RequestHandler);
   app.use(express.urlencoded({ extended: false }) as unknown as RequestHandler);
   app.use(cookieParser() as unknown as RequestHandler);
+  app.use(jwtAuth());
+  app.use(csrfProtection());
 
   app.use(
     rateLimit({
