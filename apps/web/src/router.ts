@@ -1,4 +1,10 @@
-export type RouteId = 'login' | 'menu' | 'cart' | 'courier' | 'admin';
+export type RouteId =
+  | 'login'
+  | 'menu'
+  | 'cart'
+  | 'orders'
+  | 'courier'
+  | 'admin';
 
 export function routeToHash(route: RouteId) {
   return `#/${route}`;
@@ -13,6 +19,7 @@ export function parseHashRoute(hash: string): RouteId | null {
     case 'login':
     case 'menu':
     case 'cart':
+    case 'orders':
     case 'courier':
     case 'admin':
       return seg;
@@ -24,4 +31,3 @@ export function parseHashRoute(hash: string): RouteId | null {
 export function navigate(route: RouteId) {
   window.location.hash = routeToHash(route);
 }
-

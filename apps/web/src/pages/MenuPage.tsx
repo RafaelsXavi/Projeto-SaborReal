@@ -7,43 +7,36 @@ import { useCatalog, type CatalogItem } from '../hooks/useCatalog';
 import { useTheme } from '../hooks/useTheme';
 import { navigate } from '../router';
 
-type Category =
-  | 'Todos'
-  | 'Entradas'
-  | 'Pratos Principais'
-  | 'Bebidas'
-  | 'Sobremesas';
-
 type CatalogUi = {
   id: string;
   name: string;
   priceCents: number;
-  category: Exclude<Category, 'Todos'>;
+  categoryName: string;
   description: string;
   imageUrl: string;
 };
 
 const uiById: Record<string, Omit<CatalogUi, 'id' | 'name' | 'priceCents'>> = {
   'x-burger': {
-    category: 'Pratos Principais',
+    categoryName: 'Pratos Principais',
     description: 'Hambúrguer artesanal suculento com queijo e molho da casa.',
     imageUrl:
       'https://lh3.googleusercontent.com/aida-public/AB6AXuCGLple5QS5wh2yOVI7MqEgp0UW1F0UklJgHABG0_cpvYzBbUk-WCPSPdoYbv3nRyQjMjGY58rVcZRzFoIXjfUh4rO905WBPoZb0PaimT7ewyQzGWnlrJx5o_HpPa0mXvBsnDyNsQqFh01Fel3f8tR1mnGDddEHbBoGKSp_OJ0l4Kmp4WBpFvDsRj1e_ZjcL_Z11qoKQfpLfekG17jjT6AkyBKgB_UvbVdCEXHh7hSRGWBpYYV0BzapWUpCXtRydy8jpgKijxl_0i4-',
   },
   'x-salada': {
-    category: 'Pratos Principais',
+    categoryName: 'Pratos Principais',
     description: 'Clássico com alface, tomate, queijo e pão macio.',
     imageUrl:
       'https://lh3.googleusercontent.com/aida-public/AB6AXuABT91n0Tj6DkruXB1cK8oLJ0ir26bo22AFC7Re4qNMApGo973490e6d7O6q5puUZn5tC8ziWJ5cBSG1kouhDDUOdO88-yLOUpGrW4zR22IMNZIWWsh1x3JnT2Ruf4oUzi7tN8184ANxrybwNamv3J7-rNixJrxA7ZY1VbcZd6Ku8OyhouX_RyrMkkTMAQXsbDMDfF7gjLmip1ll-i0RizBQHFhFGOL41TtBDuf5-f7uTloflq1L_139vs7IkyK0G1sUvlNK43nWAz9',
   },
   batata: {
-    category: 'Entradas',
+    categoryName: 'Entradas',
     description: 'Batata frita crocante, ideal para compartilhar.',
     imageUrl:
       'https://lh3.googleusercontent.com/aida-public/AB6AXuBYLpbSVi1_5hkLGhZMhUY3sN13d25xC5yEQxnHc-6qDxXLPh_gUuq2uqgwNMGCqXrQVZFLNNeDvQ3WS9XBr1c93-aExbkK58a4l7_VIGB5udhtXvdL5fA48lJWAjqkoz92oQVKfCn16HxSDKescSiIf1gM66bmT5UZgkHkf34B_NN6_JHh_z5Ve-yFFwxu9ppsdYmxSn19iehix-Lp3RQ6fU1asAxPPEWkdu3sCoJ-jNUBh1zRoJTQ166enDLHyn0TmKYo5v5UvrXP',
   },
   refri: {
-    category: 'Bebidas',
+    categoryName: 'Bebidas',
     description: 'Refrigerante bem gelado para acompanhar seu pedido.',
     imageUrl:
       'https://lh3.googleusercontent.com/aida-public/AB6AXuCBH3KJm860iAJvis_AazNqq_0832GQuRnvqm0UkbiRvcHiIPMRhGwC3_JUJKWfsdRIinH7NRNU2htCkTreL2HnvTQxcUMUoiEE-YfLY0ZI7aoWVxlrIUVipCMi92QaIfPJfi8ZvxcHiAeofXpxoBVlGxVX7jgB5HdpyiXdBO6PvXIMi4PJlRaZ-SprmgNMG8vz',
@@ -52,14 +45,17 @@ const uiById: Record<string, Omit<CatalogUi, 'id' | 'name' | 'priceCents'>> = {
 
 function toUiItem(item: CatalogItem): CatalogUi {
   const ui = uiById[item.id];
+  const categoryName =
+    item.categoryName ?? ui?.categoryName ?? 'Pratos Principais';
   return {
     id: item.id,
     name: item.name,
     priceCents: item.priceCents,
-    category: ui?.category ?? 'Pratos Principais',
+    categoryName,
     description:
-      ui?.description ?? 'Uma opção deliciosa do nosso cardápio.',
+      item.description ?? ui?.description ?? 'Uma opção deliciosa do nosso cardápio.',
     imageUrl:
+      item.imageUrl ??
       ui?.imageUrl ??
       'https://lh3.googleusercontent.com/aida-public/AB6AXuCBxZwwzo1rONN9zdR2u-w7kAkmYQlshLSog1teBvvKcuci3mU4HWEuoOvnRZiMDDgCHLiX9R4QGpqs7oDm07GEsAnvuSYmL2rW4PmV-Lu2lAXoQttHvX5fo8cadNIQIREGZG4MszYPvQh4H73b_nxAW6PzUpqD3cvz7GLTAy4REWHSHhKsudoEniArXVrvfSrDqUN-xbcI7GkK4H-UA8ThDS0-DVwKFu2OFRB3lcF7391yjsDMYK6Z40NzEj7n9K_OWoLHz7wx1gMP',
   };
@@ -68,17 +64,22 @@ function toUiItem(item: CatalogItem): CatalogUi {
 export function MenuPage() {
   const { user } = useAuth();
   const { toggle } = useTheme();
-  const { catalog, loading } = useCatalog();
+  const { catalog, categories, loading, error } = useCatalog();
   const { add, totalQty } = useCart();
 
   const [query, setQuery] = useState('');
-  const [category, setCategory] = useState<Category>('Todos');
+  const [category, setCategory] = useState<string>('Todos');
 
   const uiItems = useMemo(() => catalog.map(toUiItem), [catalog]);
+  const tabs = useMemo(() => {
+    const names = categories.map((c) => c.name);
+    const uniq = Array.from(new Set(names)).filter(Boolean);
+    return ['Todos', ...uniq];
+  }, [categories]);
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return uiItems.filter((it) => {
-      const okCategory = category === 'Todos' || it.category === category;
+      const okCategory = category === 'Todos' || it.categoryName === category;
       const okQuery =
         q.length === 0 ||
         it.name.toLowerCase().includes(q) ||
@@ -145,6 +146,12 @@ export function MenuPage() {
 
       <main className="max-w-7xl mx-auto pb-24">
         <div className="px-4 py-6 space-y-6">
+          {error ? (
+            <div className="bg-red-50 dark:bg-red-950/20 border border-red-100 dark:border-red-900/50 rounded-xl p-3 text-xs text-red-600 dark:text-red-400">
+              {error}
+            </div>
+          ) : null}
+
           <div className="relative group">
             <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
               <MaterialIcon
@@ -162,15 +169,7 @@ export function MenuPage() {
           </div>
 
           <nav className="flex overflow-x-auto no-scrollbar gap-2 pb-2">
-            {(
-              [
-                'Todos',
-                'Entradas',
-                'Pratos Principais',
-                'Bebidas',
-                'Sobremesas',
-              ] as Category[]
-            ).map((c) => (
+            {tabs.map((c) => (
               <button
                 key={c}
                 type="button"
@@ -179,7 +178,7 @@ export function MenuPage() {
                   c === category
                     ? 'whitespace-nowrap px-6 py-2 rounded-full bg-primary text-white font-bold text-sm shadow-lg shadow-primary/20'
                     : 'whitespace-nowrap px-6 py-2 rounded-full bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold text-sm border border-slate-200 dark:border-slate-700 hover:border-primary transition-colors'
-                }
+                  }
               >
                 {c}
               </button>
@@ -279,10 +278,10 @@ export function MenuPage() {
           </a>
           <a
             className="flex flex-col items-center gap-0.5 text-slate-400 dark:text-slate-500"
-            href="#/cart"
+            href="#/orders"
           >
-            <MaterialIcon name="shopping_cart" />
-            <span className="text-[10px] font-medium">Carrinho</span>
+            <MaterialIcon name="receipt_long" />
+            <span className="text-[10px] font-medium">Pedidos</span>
           </a>
           <a
             className="flex flex-col items-center gap-0.5 text-slate-400 dark:text-slate-500"
@@ -296,4 +295,3 @@ export function MenuPage() {
     </div>
   );
 }
-

@@ -32,6 +32,17 @@ export function useAuth() {
     });
   }
 
+  async function devCreateUser(input: {
+    identifier: string;
+    password: string;
+    role: Role;
+  }) {
+    await apiFetch('/v1/auth/dev-create-user', {
+      method: 'POST',
+      body: JSON.stringify(input),
+    });
+  }
+
   async function login(input: { identifier: string; password: string }) {
     await apiFetch('/v1/auth/login', {
       method: 'POST',
@@ -45,5 +56,5 @@ export function useAuth() {
     setUser(null);
   }
 
-  return { user, loading, register, login, logout, refreshSession };
+  return { user, loading, register, devCreateUser, login, logout, refreshSession };
 }

@@ -6,12 +6,14 @@ import { useTheme } from '../hooks/useTheme';
 import { navigate } from '../router';
 
 export function LoginPage() {
-  const { user, loading, login, logout, refreshSession, register } = useAuth();
+  const { user, loading, login, logout, refreshSession, register, devCreateUser } =
+    useAuth();
   const { toggle } = useTheme();
 
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [identifier, setIdentifier] = useState('dev@example.com');
   const [password, setPassword] = useState('dev-password-123');
+  const [role, setRole] = useState<'customer' | 'admin' | 'courier'>('customer');
   const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -27,7 +29,13 @@ export function LoginPage() {
     setError(null);
     setSubmitting(true);
     try {
-      if (mode === 'register') await register({ identifier, password });
+      if (mode === 'register') {
+        if (role === 'customer') {
+          await register({ identifier, password });
+        } else {
+          await devCreateUser({ identifier, password, role });
+        }
+      }
       await login({ identifier, password });
       navigate('menu');
     } catch (err: unknown) {
@@ -214,6 +222,33 @@ export function LoginPage() {
                 </p>
               </div>
 
+              {mode === 'register' ? (
+                <div className="space-y-1">
+                  <label
+                    className="text-sm font-semibold text-slate-700 dark:text-slate-300 ml-1"
+                    htmlFor="role"
+                  >
+                    Tipo de conta (dev)
+                  </label>
+                  <select
+                    id="role"
+                    className="w-full h-12 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg px-4 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-primary focus:border-transparent transition-all outline-none"
+                    value={role}
+                    onChange={(e) =>
+                      setRole(e.target.value as 'customer' | 'admin' | 'courier')
+                    }
+                  >
+                    <option value="customer">Customer</option>
+                    <option value="admin">Admin</option>
+                    <option value="courier">Courier</option>
+                  </select>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 ml-1">
+                    Para <span className="font-bold">admin/courier</span> usamos{' '}
+                    <span className="font-bold">/v1/auth/dev-create-user</span>.
+                  </p>
+                </div>
+              ) : null}
+
               <div className="flex items-center justify-between pt-1">
                 <div className="text-xs font-semibold text-primary">
                   Sessão: {sessionLabel}
@@ -314,4 +349,3 @@ export function LoginPage() {
     </div>
   );
 }
-

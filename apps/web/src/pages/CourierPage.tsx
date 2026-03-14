@@ -1,52 +1,119 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { apiFetch, userFriendlyError } from '../api';
 import { MaterialIcon } from '../components/MaterialIcon';
 import { useAuth } from '../hooks/useAuth';
+import { useCatalog } from '../hooks/useCatalog';
 import { useTheme } from '../hooks/useTheme';
 import { navigate } from '../router';
 
-type CourierOrder = {
+type OrderStatus =
+  | 'PLACED'
+  | 'PREPARING'
+  | 'READY_FOR_PICKUP'
+  | 'OUT_FOR_DELIVERY'
+  | 'COMPLETED'
+  | 'CANCELLED';
+
+type ApiOrder = {
   id: string;
-  earnings: string;
-  urgent?: boolean;
-  eta: string;
-  itemsSummary: string;
-  distance: string;
-  coverUrl: string;
+  userId: string;
+  status: OrderStatus;
+  lines: { id: string; qty: number }[];
+  createdAt: string;
+  courierId?: string;
 };
 
-const availableSeed: CourierOrder[] = [
-  {
-    id: '8842',
-    earnings: 'R$ 12,50',
-    urgent: true,
-    eta: '15-20 min',
-    itemsSummary: '2 Itens • R$ 45,90',
-    distance: '2.4km',
-    coverUrl:
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuDL9klbGoZv5GrfxK_OVWir27P4mhh2lhFJex3XmO02gRa2zdJ3UAJvrppPHOcJRufCFbXzpfawhwqZIXEulhy-Y8jzyIdVILXyDA8Ze9-bFRYG6UCAL3pLOnH6S4Dfa_mM2S4FAEC_2Pb3RdCBwCEpywBQTsJXSslb-xqt2DFztoGgj5xf4h3Jv4UH8eCtVC9iI2GG6_iHI1H_7twHDM3o2jiCzWP0UG_v2RuyTrThH_BF1seeO30yDV-uDA7oS_dYc_Wjo8uhVrrT',
-  },
-  {
-    id: '8845',
-    earnings: 'R$ 8,20',
-    eta: '25-30 min',
-    itemsSummary: '1 Item • R$ 22,00',
-    distance: '4.1km',
-    coverUrl:
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuCvTRFlbVWlUupcSNUHT7RiOMh_wLlQKybkt3-vCh45_xL90Wb1qxJ1R9gcA-rbK_nvRU7eYdjixgUexl2MN5JeSyQNKn8ODeV0vOGcwAPwz5yQJav8vA8eUUOBhfnBOU-1mI9TTLY84Mncpk4Rjgkd9iqYyrsrb7oIUXK0mFdrDMXqQqiAIR32w_nat43yYKKGqKfY1YZPNygxOqvG7xKh2x_MLx5wSwBGTLhfewFK_YBM2_FGIuqDIbtib5hA2c50NshM7e3faO1n',
-  },
+const covers = [
+  'https://lh3.googleusercontent.com/aida-public/AB6AXuDL9klbGoZv5GrfxK_OVWir27P4mhh2lhFJex3XmO02gRa2zdJ3UAJvrppPHOcJRufCFbXzpfawhwqZIXEulhy-Y8jzyIdVILXyDA8Ze9-bFRYG6UCAL3pLOnH6S4Dfa_mM2S4FAEC_2Pb3RdCBwCEpywBQTsJXSslb-xqt2DFztoGgj5xf4h3Jv4UH8eCtVC9iI2GG6_iHI1H_7twHDM3o2jiCzWP0UG_v2RuyTrThH_BF1seeO30yDV-uDA7oS_dYc_Wjo8uhVrrT',
+  'https://lh3.googleusercontent.com/aida-public/AB6AXuCvTRFlbVWlUupcSNUHT7RiOMh_wLlQKybkt3-vCh45_xL90Wb1qxJ1R9gcA-rbK_nvRU7eYdjixgUexl2MN5JeSyQNKn8ODeV0vOGcwAPwz5yQJav8vA8eUUOBhfnBOU-1mI9TTLY84Mncpk4Rjgkd9iqYyrsrb7oIUXK0mFdrDMXqQqiAIR32w_nat43yYKKGqKfY1YZPNygxOqvG7xKh2x_MLx5wSwBGTLhfewFK_YBM2_FGIuqDIbtib5hA2c50NshM7e3faO1n',
 ];
+
+function statusLabel(status: OrderStatus) {
+  switch (status) {
+    case 'PLACED':
+      return 'Novo';
+    case 'PREPARING':
+      return 'Em preparo';
+    case 'READY_FOR_PICKUP':
+      return 'Pronto';
+    case 'OUT_FOR_DELIVERY':
+      return 'Em rota';
+    case 'COMPLETED':
+      return 'Concluído';
+    case 'CANCELLED':
+      return 'Cancelado';
+  }
+}
 
 export function CourierPage() {
   const { user } = useAuth();
   const { toggle } = useTheme();
+  const { catalog } = useCatalog();
   const [tab, setTab] = useState<'available' | 'mine'>('available');
 
-  // UI-only: uma notificação de exemplo (conflito)
-  const [banner, setBanner] = useState<string | null>(
-    'Pedido #8841: Já atribuído a outro entregador.',
-  );
+  const [available, setAvailable] = useState<ApiOrder[]>([]);
+  const [mine, setMine] = useState<ApiOrder[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [banner, setBanner] = useState<string | null>(null);
 
   const forbidden = user && user.role !== 'courier';
+
+  const itemNameById = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const it of catalog) m.set(it.id, it.name);
+    return m;
+  }, [catalog]);
+
+  async function refresh() {
+    if (!user || user.role !== 'courier') return;
+    setLoading(true);
+    setBanner(null);
+    try {
+      const [aRes, mRes] = await Promise.all([
+        apiFetch('/v1/courier/orders/available'),
+        apiFetch('/v1/courier/orders/mine'),
+      ]);
+      const a = (await aRes.json()) as { ok: boolean; orders: ApiOrder[] };
+      const m = (await mRes.json()) as { ok: boolean; orders: ApiOrder[] };
+      setAvailable(Array.isArray(a.orders) ? a.orders : []);
+      setMine(Array.isArray(m.orders) ? m.orders : []);
+    } catch (e: unknown) {
+      setBanner(userFriendlyError(e));
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    void refresh();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.userId, user?.role]);
+
+  async function accept(orderId: string) {
+    setBanner(null);
+    try {
+      await apiFetch(`/v1/courier/orders/${encodeURIComponent(orderId)}/accept`, {
+        method: 'POST',
+      });
+      await refresh();
+      setTab('mine');
+    } catch (e: unknown) {
+      setBanner(userFriendlyError(e));
+    }
+  }
+
+  async function complete(orderId: string) {
+    setBanner(null);
+    try {
+      await apiFetch(
+        `/v1/courier/orders/${encodeURIComponent(orderId)}/complete`,
+        { method: 'POST' },
+      );
+      await refresh();
+    } catch (e: unknown) {
+      setBanner(userFriendlyError(e));
+    }
+  }
 
   return (
     <div className="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 min-h-screen">
@@ -144,45 +211,53 @@ export function CourierPage() {
         </div>
 
         <div className="p-4 space-y-4">
+          {loading ? (
+            <div className="bg-white dark:bg-slate-900 rounded-xl border border-primary/10 p-4 text-sm text-slate-500 dark:text-slate-400">
+              Carregando pedidos...
+            </div>
+          ) : null}
+
           {tab === 'available'
-            ? availableSeed.map((o) => (
+            ? available.map((o, idx) => (
                 <div
                   className="flex flex-col rounded-xl shadow-sm border border-primary/10 bg-white dark:bg-slate-900 overflow-hidden"
                   key={o.id}
                 >
                   <div
                     className="w-full h-32 bg-center bg-no-repeat bg-cover"
-                    style={{ backgroundImage: `url("${o.coverUrl}")` }}
+                    style={{
+                      backgroundImage: `url("${covers[idx % covers.length]}")`,
+                    }}
                   />
                   <div className="flex flex-col gap-2 p-4">
                     <div className="flex justify-between items-start">
                       <div>
                         <p className="text-slate-900 dark:text-slate-100 text-lg font-bold leading-tight">
-                          Pedido #{o.id}
+                          Pedido #{o.id.slice(0, 8)}
                         </p>
                         <p className="text-primary text-sm font-semibold mt-1">
-                          Ganhos: {o.earnings}
+                          Status: {statusLabel(o.status)}
                         </p>
                       </div>
-                      {o.urgent ? (
-                        <div className="bg-primary/10 text-primary px-2 py-1 rounded text-xs font-bold uppercase">
-                          Urgente
-                        </div>
-                      ) : null}
                     </div>
 
                     <div className="flex flex-col gap-1 mt-2">
                       <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400">
                         <MaterialIcon name="schedule" className="text-sm" />
-                        <p className="text-sm">Tempo estimado: {o.eta}</p>
+                        <p className="text-sm">
+                          Criado em:{' '}
+                          {new Date(o.createdAt).toLocaleTimeString('pt-BR')}
+                        </p>
                       </div>
                       <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400">
                         <MaterialIcon name="shopping_bag" className="text-sm" />
-                        <p className="text-sm">{o.itemsSummary}</p>
+                        <p className="text-sm">
+                          {o.lines.reduce((s, l) => s + l.qty, 0)} itens
+                        </p>
                       </div>
                       <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400">
                         <MaterialIcon name="near_me" className="text-sm" />
-                        <p className="text-sm">Entrega em {o.distance}</p>
+                        <p className="text-sm">Cliente: {o.userId.slice(0, 8)}</p>
                       </div>
                     </div>
 
@@ -190,9 +265,7 @@ export function CourierPage() {
                       className="w-full mt-3 flex cursor-pointer items-center justify-center rounded-xl h-12 bg-primary text-white text-base font-bold transition-all active:scale-95 disabled:opacity-60"
                       type="button"
                       disabled={forbidden || !user}
-                      onClick={() =>
-                        setBanner('Aceite de pedido ainda não implementado (UI).')
-                      }
+                      onClick={() => accept(o.id)}
                     >
                       <span>Aceitar Pedido</span>
                     </button>
@@ -200,55 +273,85 @@ export function CourierPage() {
                 </div>
               ))
             : (
-                <div className="bg-primary/5 dark:bg-primary/10 border border-primary rounded-xl p-4">
-                  <div className="flex justify-between mb-4">
-                    <span className="bg-primary text-white text-xs font-bold px-2 py-1 rounded">
-                      COLETA EM ANDAMENTO
-                    </span>
-                    <span className="text-slate-900 dark:text-slate-100 font-bold">
-                      #8839
-                    </span>
-                  </div>
-                  <div className="space-y-3">
-                    <div className="flex gap-3">
-                      <MaterialIcon name="restaurant" className="text-primary" />
-                      <div>
-                        <p className="text-xs text-slate-500 uppercase font-bold">
-                          Origem
-                        </p>
-                        <p className="text-sm font-semibold">
-                          Restaurante Sabor Real - Centro
-                        </p>
+                <div className="space-y-4">
+                  {mine.length === 0 ? (
+                    <div className="bg-white dark:bg-slate-900 rounded-xl border border-primary/10 p-4 text-sm text-slate-500 dark:text-slate-400">
+                      Você ainda não aceitou nenhum pedido.
+                    </div>
+                  ) : null}
+                  {mine.map((o, idx) => (
+                    <div
+                      className="bg-primary/5 dark:bg-primary/10 border border-primary rounded-xl p-4"
+                      key={o.id}
+                    >
+                      <div className="flex justify-between mb-4">
+                        <span className="bg-primary text-white text-xs font-bold px-2 py-1 rounded">
+                          {statusLabel(o.status).toUpperCase()}
+                        </span>
+                        <span className="text-slate-900 dark:text-slate-100 font-bold">
+                          #{o.id.slice(0, 8)}
+                        </span>
+                      </div>
+
+                      <div className="space-y-3">
+                        <div className="flex gap-3">
+                          <MaterialIcon
+                            name="restaurant"
+                            className="text-primary"
+                          />
+                          <div>
+                            <p className="text-xs text-slate-500 uppercase font-bold">
+                              Itens
+                            </p>
+                            <p className="text-sm font-semibold">
+                              {o.lines
+                                .slice(0, 2)
+                                .map(
+                                  (l) =>
+                                    `${l.qty}x ${itemNameById.get(l.id) ?? l.id}`,
+                                )
+                                .join(' • ')}
+                              {o.lines.length > 2 ? ' • ...' : ''}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex gap-3">
+                          <MaterialIcon
+                            name="location_on"
+                            className="text-primary"
+                          />
+                          <div>
+                            <p className="text-xs text-slate-500 uppercase font-bold">
+                              Cliente
+                            </p>
+                            <p className="text-sm font-semibold">
+                              {o.userId.slice(0, 8)}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="mt-4 pt-4 border-t border-primary/10 flex gap-2">
+                        <button
+                          className="flex-1 h-10 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-sm"
+                          type="button"
+                          onClick={() =>
+                            setBanner('Detalhes completos ainda não implementados.')
+                          }
+                        >
+                          Detalhes
+                        </button>
+                        <button
+                          className="flex-[2] h-10 rounded-lg bg-primary text-white font-bold text-sm disabled:opacity-60"
+                          type="button"
+                          disabled={o.status !== 'OUT_FOR_DELIVERY'}
+                          onClick={() => complete(o.id)}
+                        >
+                          Finalizar Entrega
+                        </button>
                       </div>
                     </div>
-                    <div className="flex gap-3">
-                      <MaterialIcon name="location_on" className="text-primary" />
-                      <div>
-                        <p className="text-xs text-slate-500 uppercase font-bold">
-                          Destino
-                        </p>
-                        <p className="text-sm font-semibold">
-                          Rua das Flores, 123 - Apt 402
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="mt-4 pt-4 border-t border-primary/10 flex gap-2">
-                    <button
-                      className="flex-1 h-10 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-sm"
-                      type="button"
-                      onClick={() => setBanner('Detalhes ainda não implementado.')}
-                    >
-                      Detalhes
-                    </button>
-                    <button
-                      className="flex-[2] h-10 rounded-lg bg-primary text-white font-bold text-sm"
-                      type="button"
-                      onClick={() => setBanner('Ação ainda não implementada.')}
-                    >
-                      Cheguei no Local
-                    </button>
-                  </div>
+                  ))}
                 </div>
               )}
         </div>
@@ -310,4 +413,3 @@ export function CourierPage() {
     </div>
   );
 }
-

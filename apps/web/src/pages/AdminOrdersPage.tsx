@@ -1,139 +1,122 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { apiFetch, userFriendlyError } from '../api';
 import { MaterialIcon } from '../components/MaterialIcon';
 import { useAuth } from '../hooks/useAuth';
+import { useCatalog } from '../hooks/useCatalog';
 import { useTheme } from '../hooks/useTheme';
 import { navigate } from '../router';
 import { formatPrice } from '../utils/format';
 
 type OrderStatus =
-  | 'pending'
-  | 'preparing'
-  | 'on_route'
-  | 'delivered'
-  | 'canceled';
+  | 'PLACED'
+  | 'PREPARING'
+  | 'READY_FOR_PICKUP'
+  | 'OUT_FOR_DELIVERY'
+  | 'COMPLETED'
+  | 'CANCELLED';
 
-type OrderItem = {
-  qty: number;
-  name: string;
-  note?: string;
-  priceCents: number;
-};
-
-type AdminOrder = {
+type ApiOrder = {
   id: string;
-  createdAtLabel: string;
+  userId: string;
   status: OrderStatus;
-  customerName: string;
-  addressLine1: string;
-  addressLine2: string;
-  courierName?: string;
-  items: OrderItem[];
-  deliveryFeeCents: number;
+  lines: { id: string; qty: number }[];
+  createdAt: string;
+  courierId?: string;
 };
+
+const statusFlow: OrderStatus[] = [
+  'PLACED',
+  'PREPARING',
+  'READY_FOR_PICKUP',
+  'OUT_FOR_DELIVERY',
+  'COMPLETED',
+];
 
 function statusLabel(s: OrderStatus) {
   switch (s) {
-    case 'pending':
+    case 'PLACED':
       return 'Pendente';
-    case 'preparing':
+    case 'PREPARING':
       return 'Em preparo';
-    case 'on_route':
+    case 'READY_FOR_PICKUP':
+      return 'Pronto';
+    case 'OUT_FOR_DELIVERY':
       return 'Em rota';
-    case 'delivered':
+    case 'COMPLETED':
       return 'Entregue';
-    case 'canceled':
+    case 'CANCELLED':
       return 'Cancelado';
   }
 }
 
 function statusPillClass(s: OrderStatus) {
   switch (s) {
-    case 'pending':
+    case 'PLACED':
       return 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20';
-    case 'preparing':
+    case 'PREPARING':
       return 'bg-sky-500/10 text-sky-700 dark:text-sky-300 border border-sky-500/20';
-    case 'on_route':
+    case 'READY_FOR_PICKUP':
+      return 'bg-violet-500/10 text-violet-700 dark:text-violet-300 border border-violet-500/20';
+    case 'OUT_FOR_DELIVERY':
       return 'bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border border-indigo-500/20';
-    case 'delivered':
+    case 'COMPLETED':
       return 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20';
-    case 'canceled':
+    case 'CANCELLED':
       return 'bg-rose-500/10 text-rose-700 dark:text-rose-300 border border-rose-500/20';
   }
 }
 
 function nextStatus(s: OrderStatus): OrderStatus {
-  switch (s) {
-    case 'pending':
-      return 'preparing';
-    case 'preparing':
-      return 'on_route';
-    case 'on_route':
-      return 'delivered';
-    case 'delivered':
-    case 'canceled':
-      return s;
-  }
+  if (s === 'CANCELLED' || s === 'COMPLETED') return s;
+  const idx = statusFlow.indexOf(s);
+  if (idx < 0) return s;
+  return statusFlow[Math.min(idx + 1, statusFlow.length - 1)] ?? s;
 }
-
-const seedOrders: AdminOrder[] = [
-  {
-    id: '8842',
-    createdAtLabel: 'Hoje • 12:32',
-    status: 'pending',
-    customerName: 'Ricardo Mendes',
-    addressLine1: 'Rua das Olimpíadas, 205, Apto 12B',
-    addressLine2: 'Itaim Bibi, São Paulo - SP',
-    courierName: 'João (Motoboy)',
-    deliveryFeeCents: 0,
-    items: [
-      {
-        qty: 1,
-        name: 'Hambúrguer Gourmet Especial',
-        note: 'Sem cebola, ponto bem passado',
-        priceCents: 4890,
-      },
-      { qty: 1, name: 'Batata Rústica Grande', note: 'Com alecrim', priceCents: 2400 },
-      { qty: 1, name: 'Suco de Laranja Natural', note: '500ml, sem açúcar', priceCents: 1200 },
-    ],
-  },
-  {
-    id: '8845',
-    createdAtLabel: 'Hoje • 12:51',
-    status: 'on_route',
-    customerName: 'Ana Clara',
-    addressLine1: 'Av. Paulista, 999',
-    addressLine2: 'Bela Vista, São Paulo - SP',
-    courierName: 'Marcos (Moto)',
-    deliveryFeeCents: 700,
-    items: [
-      { qty: 2, name: 'X-Salada', priceCents: 2890 },
-      { qty: 1, name: 'Refrigerante Lata', priceCents: 790 },
-    ],
-  },
-  {
-    id: '8839',
-    createdAtLabel: 'Hoje • 11:40',
-    status: 'delivered',
-    customerName: 'Bruno Souza',
-    addressLine1: 'Rua das Flores, 123',
-    addressLine2: 'Centro, São Paulo - SP',
-    deliveryFeeCents: 700,
-    items: [{ qty: 1, name: 'Feijoada', priceCents: 5200 }],
-  },
-];
 
 export function AdminOrdersPage() {
   const { user } = useAuth();
   const { toggle } = useTheme();
+  const { catalog } = useCatalog();
 
-  const [orders, setOrders] = useState<AdminOrder[]>(seedOrders);
-  const [selectedId, setSelectedId] = useState<string>(seedOrders[0]?.id ?? '');
+  const [orders, setOrders] = useState<ApiOrder[]>([]);
+  const [selectedId, setSelectedId] = useState<string>('');
   const [query, setQuery] = useState('');
-  const [filter, setFilter] = useState<
-    'all' | OrderStatus
-  >('all');
+  const [filter, setFilter] = useState<'all' | OrderStatus>('all');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
 
   const forbidden = user ? user.role !== 'admin' : true;
+
+  const itemById = useMemo(() => {
+    const m = new Map<string, { name: string; priceCents: number }>();
+    for (const it of catalog) {
+      m.set(it.id, { name: it.name, priceCents: it.priceCents });
+    }
+    return m;
+  }, [catalog]);
+
+  async function refresh() {
+    if (!user || user.role !== 'admin') return;
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await apiFetch('/v1/admin/orders');
+      const data = (await res.json()) as { ok: boolean; orders: ApiOrder[] };
+      const list = Array.isArray(data.orders) ? data.orders : [];
+      setOrders(list);
+      if (!selectedId && list[0]?.id) setSelectedId(list[0].id);
+    } catch (e: unknown) {
+      setError(userFriendlyError(e));
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    void refresh();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.userId, user?.role]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -141,9 +124,9 @@ export function AdminOrdersPage() {
       const okStatus = filter === 'all' || o.status === filter;
       const okQuery =
         q.length === 0 ||
-        o.id.includes(q) ||
-        o.customerName.toLowerCase().includes(q) ||
-        (o.courierName ?? '').toLowerCase().includes(q);
+        o.id.toLowerCase().includes(q) ||
+        o.userId.toLowerCase().includes(q) ||
+        (o.courierId ?? '').toLowerCase().includes(q);
       return okStatus && okQuery;
     });
   }, [orders, query, filter]);
@@ -153,28 +136,28 @@ export function AdminOrdersPage() {
     [orders, selectedId],
   );
 
-  function orderSubtotalCents(o: AdminOrder) {
-    return o.items.reduce((sum, it) => sum + it.priceCents * it.qty, 0);
+  function orderSubtotalCents(o: ApiOrder) {
+    return o.lines.reduce((sum, l) => {
+      const it = itemById.get(l.id);
+      const price = it?.priceCents ?? 0;
+      return sum + price * l.qty;
+    }, 0);
   }
 
-  function orderTotalCents(o: AdminOrder) {
-    return orderSubtotalCents(o) + o.deliveryFeeCents;
-  }
-
-  function cancelSelected() {
-    if (!selected) return;
-    setOrders((prev) =>
-      prev.map((o) => (o.id === selected.id ? { ...o, status: 'canceled' } : o)),
-    );
-  }
-
-  function advanceSelected() {
-    if (!selected) return;
-    setOrders((prev) =>
-      prev.map((o) =>
-        o.id === selected.id ? { ...o, status: nextStatus(o.status) } : o,
-      ),
-    );
+  async function setStatus(orderId: string, status: OrderStatus) {
+    setBusy(true);
+    setError(null);
+    try {
+      await apiFetch(`/v1/admin/orders/${encodeURIComponent(orderId)}/status`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status }),
+      });
+      await refresh();
+    } catch (e: unknown) {
+      setError(userFriendlyError(e));
+    } finally {
+      setBusy(false);
+    }
   }
 
   return (
@@ -209,15 +192,13 @@ export function AdminOrdersPage() {
             </button>
             <div className="flex items-center gap-2 pl-4 border-l border-primary/10">
               <div className="text-right hidden sm:block">
-                <p className="text-xs font-bold">Admin Sabor</p>
-                <p className="text-[10px] text-slate-500">Gerente de Operações</p>
+                <p className="text-xs font-bold">Admin</p>
+                <p className="text-[10px] text-slate-500">
+                  {user ? user.userId.slice(0, 8) : 'anônimo'}
+                </p>
               </div>
               <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center overflow-hidden border-2 border-primary/50">
-                <img
-                  alt="Admin"
-                  src="https://lh3.googleusercontent.com/aida-public/AB6AXuClBvVqSid4CZ5x8xBujID_hlDs5qOpLQTq_cvRTq7XVVRccxqhJmkpbKb7zQvtebWASx75K2Z5DOzlfMV0DnGc1zbGFk1CCTpDsZzvraxjPDCl7ZyKPml5wSOifoRLlhpPOFhk-KUXcUkvvh7pcS2J7DYdrAVxH583Ld7k3Fp-ASIvsenA-smRl3DiSL1T3Lgrxp2Ha-7fZFtCQcq2RFDAGocvupppUmEfpfJMLMwy4j08HAiFB0Hxwqkw5mwPmha5Rhz0g_vFxwJB"
-                  loading="lazy"
-                />
+                <MaterialIcon name="person" className="text-primary" />
               </div>
             </div>
           </div>
@@ -231,20 +212,35 @@ export function AdminOrdersPage() {
               Painel de Pedidos
             </h2>
             <p className="text-slate-500 dark:text-slate-400">
-              Gerencie e acompanhe todos os pedidos em tempo real.
+              Acompanhe pedidos do sistema (via API).
             </p>
           </div>
-          <div className="flex gap-4">
+          <div className="flex gap-3">
+            <button
+              className="flex items-center gap-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-5 py-2.5 rounded-xl font-bold hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+              type="button"
+              onClick={refresh}
+              disabled={loading}
+            >
+              <MaterialIcon name="refresh" />
+              Atualizar
+            </button>
             <button
               className="flex items-center gap-2 bg-primary text-white px-5 py-2.5 rounded-xl font-bold hover:brightness-110 transition-all shadow-lg shadow-primary/20"
               type="button"
               onClick={() => navigate('menu')}
             >
               <MaterialIcon name="arrow_back" />
-              Voltar ao site
+              Voltar
             </button>
           </div>
         </div>
+
+        {error ? (
+          <div className="mb-6 bg-red-50 dark:bg-red-950/20 border border-red-100 dark:border-red-900/50 rounded-xl p-3 text-xs text-red-600 dark:text-red-400">
+            {error}
+          </div>
+        ) : null}
 
         <div className="bg-white dark:bg-background-dark/40 rounded-xl p-4 mb-6 border border-primary/5 shadow-sm">
           <div className="flex flex-wrap items-center gap-4">
@@ -256,7 +252,7 @@ export function AdminOrdersPage() {
                 />
                 <input
                   className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
-                  placeholder="Buscar por ID, cliente ou entregador..."
+                  placeholder="Buscar por ID, cliente (userId) ou courierId..."
                   type="text"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
@@ -268,11 +264,12 @@ export function AdminOrdersPage() {
               {(
                 [
                   ['all', 'Todos'],
-                  ['pending', 'Pendentes'],
-                  ['preparing', 'Em preparo'],
-                  ['on_route', 'Em rota'],
-                  ['delivered', 'Entregues'],
-                  ['canceled', 'Cancelados'],
+                  ['PLACED', 'Pendentes'],
+                  ['PREPARING', 'Em preparo'],
+                  ['READY_FOR_PICKUP', 'Prontos'],
+                  ['OUT_FOR_DELIVERY', 'Em rota'],
+                  ['COMPLETED', 'Entregues'],
+                  ['CANCELLED', 'Cancelados'],
                 ] as const
               ).map(([key, label]) => (
                 <button
@@ -294,6 +291,12 @@ export function AdminOrdersPage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_0.8fr] gap-6">
           <section className="space-y-4">
+            {loading ? (
+              <div className="bg-white dark:bg-background-dark/40 rounded-xl p-6 border border-primary/5 text-slate-500 dark:text-slate-400">
+                Carregando...
+              </div>
+            ) : null}
+
             {filtered.map((o) => (
               <button
                 key={o.id}
@@ -309,11 +312,15 @@ export function AdminOrdersPage() {
                 <div className="flex items-start justify-between gap-4">
                   <div>
                     <p className="text-xs text-slate-500 dark:text-slate-400">
-                      Pedido #{o.id} • {o.createdAtLabel}
+                      Pedido #{o.id.slice(0, 8)} •{' '}
+                      {new Date(o.createdAt).toLocaleString('pt-BR')}
                     </p>
-                    <p className="text-lg font-extrabold mt-1">{o.customerName}</p>
+                    <p className="text-lg font-extrabold mt-1">
+                      Cliente: {o.userId.slice(0, 8)}
+                    </p>
                     <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                      {o.addressLine2}
+                      Itens: {o.lines.reduce((s, l) => s + l.qty, 0)}
+                      {o.courierId ? ` • Courier: ${o.courierId.slice(0, 8)}` : ''}
                     </p>
                   </div>
                   <div className="flex flex-col items-end gap-2">
@@ -326,17 +333,14 @@ export function AdminOrdersPage() {
                       {statusLabel(o.status)}
                     </span>
                     <span className="text-primary font-extrabold">
-                      {formatPrice(orderTotalCents(o))}
+                      {formatPrice(orderSubtotalCents(o))}
                     </span>
                   </div>
-                </div>
-                <div className="mt-3 text-xs text-slate-500 dark:text-slate-400">
-                  {o.courierName ? `Entregador: ${o.courierName}` : 'Sem entregador'}
                 </div>
               </button>
             ))}
 
-            {filtered.length === 0 ? (
+            {!loading && filtered.length === 0 ? (
               <div className="bg-white dark:bg-background-dark/40 rounded-xl p-6 border border-primary/5 text-center text-slate-500 dark:text-slate-400">
                 Nenhum pedido encontrado.
               </div>
@@ -352,8 +356,8 @@ export function AdminOrdersPage() {
                       <p className="text-xs text-slate-500 dark:text-slate-400">
                         Pedido #{selected.id}
                       </p>
-                      <p className="text-2xl font-extrabold mt-1">
-                        {selected.customerName}
+                      <p className="text-lg font-extrabold mt-1">
+                        Cliente: {selected.userId}
                       </p>
                       <div className="mt-3">
                         <span
@@ -369,10 +373,10 @@ export function AdminOrdersPage() {
                     </div>
                     <div className="text-right">
                       <p className="text-xs text-slate-500 dark:text-slate-400">
-                        Total
+                        Total (estimado)
                       </p>
                       <p className="text-2xl font-extrabold text-primary">
-                        {formatPrice(orderTotalCents(selected))}
+                        {formatPrice(orderSubtotalCents(selected))}
                       </p>
                     </div>
                   </div>
@@ -381,75 +385,45 @@ export function AdminOrdersPage() {
                 <div className="p-6 space-y-6">
                   <section>
                     <h4 className="text-xs font-bold uppercase text-slate-400 tracking-widest mb-4">
-                      Informações do Cliente
-                    </h4>
-                    <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-100 dark:border-slate-800">
-                      <p className="font-bold">{selected.customerName}</p>
-                      <p className="text-sm text-slate-500 mt-1">
-                        {selected.addressLine1}
-                      </p>
-                      <p className="text-sm text-slate-500">{selected.addressLine2}</p>
-                      <div className="mt-3 flex gap-2">
-                        <button
-                          className="flex-1 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-bold flex items-center justify-center gap-2"
-                          type="button"
-                        >
-                          <MaterialIcon name="call" className="text-sm" /> Ligar
-                        </button>
-                        <button
-                          className="flex-1 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-bold flex items-center justify-center gap-2"
-                          type="button"
-                        >
-                          <MaterialIcon name="chat" className="text-sm" /> Chat
-                        </button>
-                      </div>
-                    </div>
-                  </section>
-
-                  <section>
-                    <h4 className="text-xs font-bold uppercase text-slate-400 tracking-widest mb-4">
                       Itens do Pedido
                     </h4>
                     <div className="space-y-4">
-                      {selected.items.map((it, idx) => (
-                        <div className="flex items-center justify-between" key={idx}>
-                          <div className="flex items-center gap-3">
-                            <span className="w-8 h-8 bg-primary/10 text-primary font-bold flex items-center justify-center rounded-lg text-xs">
-                              {it.qty}x
-                            </span>
-                            <div>
-                              <p className="text-sm font-bold">{it.name}</p>
-                              {it.note ? (
-                                <p className="text-[10px] text-slate-500">{it.note}</p>
-                              ) : null}
+                      {selected.lines.map((l) => {
+                        const it = itemById.get(l.id);
+                        const name = it?.name ?? l.id;
+                        const price = it?.priceCents ?? 0;
+                        return (
+                          <div className="flex items-center justify-between" key={l.id}>
+                            <div className="flex items-center gap-3">
+                              <span className="w-8 h-8 bg-primary/10 text-primary font-bold flex items-center justify-center rounded-lg text-xs">
+                                {l.qty}x
+                              </span>
+                              <div>
+                                <p className="text-sm font-bold">{name}</p>
+                                <p className="text-[10px] text-slate-500">
+                                  id: {l.id}
+                                </p>
+                              </div>
                             </div>
+                            <p className="text-sm font-bold">
+                              {price ? formatPrice(price) : '—'}
+                            </p>
                           </div>
-                          <p className="text-sm font-bold">
-                            {formatPrice(it.priceCents)}
-                          </p>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </section>
 
                   <section className="border-t border-primary/10 pt-6">
                     <div className="space-y-2">
                       <div className="flex justify-between text-sm text-slate-500">
-                        <span>Subtotal</span>
+                        <span>Subtotal (estimado)</span>
                         <span>{formatPrice(orderSubtotalCents(selected))}</span>
-                      </div>
-                      <div className="flex justify-between text-sm text-slate-500">
-                        <span>Taxa de Entrega</span>
-                        <span className="text-emerald-500 font-bold uppercase text-xs">
-                          {selected.deliveryFeeCents === 0
-                            ? 'Grátis'
-                            : formatPrice(selected.deliveryFeeCents)}
-                        </span>
                       </div>
                       <div className="flex justify-between text-lg font-extrabold pt-2 border-t border-slate-50 dark:border-slate-800">
                         <span>Total</span>
                         <span className="text-primary">
-                          {formatPrice(orderTotalCents(selected))}
+                          {formatPrice(orderSubtotalCents(selected))}
                         </span>
                       </div>
                     </div>
@@ -460,16 +434,16 @@ export function AdminOrdersPage() {
                   <button
                     className="flex-1 py-3 bg-rose-500/10 text-rose-600 rounded-xl font-bold hover:bg-rose-500/20 transition-colors disabled:opacity-60"
                     type="button"
-                    onClick={cancelSelected}
-                    disabled={selected.status === 'delivered' || selected.status === 'canceled'}
+                    onClick={() => setStatus(selected.id, 'CANCELLED')}
+                    disabled={busy || selected.status === 'COMPLETED' || selected.status === 'CANCELLED'}
                   >
                     Cancelar
                   </button>
                   <button
                     className="flex-[2] py-3 bg-primary text-white rounded-xl font-bold hover:brightness-110 transition-all shadow-lg shadow-primary/20 disabled:opacity-60"
                     type="button"
-                    onClick={advanceSelected}
-                    disabled={selected.status === 'delivered' || selected.status === 'canceled'}
+                    onClick={() => setStatus(selected.id, nextStatus(selected.status))}
+                    disabled={busy || selected.status === 'COMPLETED' || selected.status === 'CANCELLED'}
                   >
                     Avançar Status
                   </button>
@@ -489,17 +463,17 @@ export function AdminOrdersPage() {
           <MaterialIcon name="receipt_long" />
           <span className="text-[10px] font-bold">Pedidos</span>
         </a>
-        <a className="flex flex-col items-center p-2 text-slate-400" href="#">
-          <MaterialIcon name="inventory_2" />
-          <span className="text-[10px] font-bold">Estoque</span>
+        <a className="flex flex-col items-center p-2 text-slate-400" href="#/menu">
+          <MaterialIcon name="restaurant_menu" />
+          <span className="text-[10px] font-bold">Cardápio</span>
         </a>
-        <a className="flex flex-col items-center p-2 text-slate-400" href="#">
-          <MaterialIcon name="monitoring" />
-          <span className="text-[10px] font-bold">Relatórios</span>
+        <a className="flex flex-col items-center p-2 text-slate-400" href="#/courier">
+          <MaterialIcon name="two_wheeler" />
+          <span className="text-[10px] font-bold">Motoboy</span>
         </a>
-        <a className="flex flex-col items-center p-2 text-slate-400" href="#">
-          <MaterialIcon name="settings" />
-          <span className="text-[10px] font-bold">Ajustes</span>
+        <a className="flex flex-col items-center p-2 text-slate-400" href="#/login">
+          <MaterialIcon name="person" />
+          <span className="text-[10px] font-bold">Conta</span>
         </a>
       </nav>
 
