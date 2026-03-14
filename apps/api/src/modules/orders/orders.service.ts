@@ -14,6 +14,7 @@ type OrdersRepo = {
   listByUser(userId: string): Promise<Order[]>;
   listAll(): Promise<Order[]>;
   listAvailableForCourier(): Promise<Order[]>;
+  listByCourier(courierId: string): Promise<Order[]>;
   acceptOrder(input: { orderId: string; courierId: string }): Promise<Order>;
   updateStatus(input: {
     orderId: string;
@@ -42,6 +43,7 @@ function resolveRepo(): OrdersRepo {
     listByUser: async (userId) => mem.listByUser(userId),
     listAll: async () => mem.listAll(),
     listAvailableForCourier: async () => mem.listAvailableForCourier(),
+    listByCourier: async (courierId) => mem.listByCourier(courierId),
     acceptOrder: async (input) => mem.acceptOrder(input),
     updateStatus: async (input) => mem.updateStatus(input),
     cancelOrder: async (input) => mem.cancelOrder(input),
@@ -76,6 +78,10 @@ export async function listAvailableOrders() {
   return await repo().listAvailableForCourier();
 }
 
+export async function listOrdersForCourier(courierId: string) {
+  return await repo().listByCourier(courierId);
+}
+
 export async function acceptOrder(input: {
   orderId: string;
   courierId: string;
@@ -100,3 +106,4 @@ export async function completeByCourier(input: {
 }) {
   return await repo().completeByCourier(input);
 }
+

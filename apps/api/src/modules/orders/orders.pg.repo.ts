@@ -173,6 +173,17 @@ export class PgOrdersRepo {
     return this.attachLines(oRes.rows);
   }
 
+  async listByCourier(courierId: string): Promise<Order[]> {
+    const oRes = await this.pool.query<OrderRow>(
+      `select id, user_id, status, created_at, courier_id
+       from orders
+       where courier_id = $1
+       order by created_at asc`,
+      [courierId],
+    );
+    return this.attachLines(oRes.rows);
+  }
+
   async listAvailableForCourier(): Promise<Order[]> {
     const oRes = await this.pool.query<OrderRow>(
       `select id, user_id, status, created_at, courier_id

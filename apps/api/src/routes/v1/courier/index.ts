@@ -5,6 +5,7 @@ import { courierCompleteOrder } from '../../../modules/orders/orders.courier.con
 import {
   acceptOrder,
   listAvailableOrders,
+  listOrdersForCourier,
 } from '../../../modules/orders/orders.service.js';
 
 export const courierRouter = Router();
@@ -14,6 +15,19 @@ courierRouter.use(requireRole('courier'));
 courierRouter.get('/orders/available', async (_req, res, next) => {
   try {
     const orders = await listAvailableOrders();
+    res.json({ ok: true, orders });
+  } catch (err) {
+    if (err instanceof Error && err.message === 'DATABASE_NOT_CONFIGURED') {
+      return next(new AppError('DATABASE_NOT_CONFIGURED', 503));
+    }
+    next(err);
+  }
+});
+
+courierRouter.get('/orders/mine', async (req, res, next) => {
+  try {
+    if (!req.auth) return next(new AppError('UNAUTHENTICATED', 401));
+    const orders = await listOrdersForCourier(req.auth.userId);
     res.json({ ok: true, orders });
   } catch (err) {
     if (err instanceof Error && err.message === 'DATABASE_NOT_CONFIGURED') {

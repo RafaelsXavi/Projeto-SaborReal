@@ -80,6 +80,10 @@ export class InMemoryOrdersRepo {
     );
   }
 
+  listByCourier(courierId: string): Order[] {
+    return this.listAll().filter((o) => o.courierId === courierId);
+  }
+
   acceptOrder(input: { orderId: string; courierId: string }): Order {
     const order = this.orders.get(input.orderId);
     if (!order) throw new Error('ORDER_NOT_FOUND');
@@ -129,3 +133,4 @@ export class InMemoryOrdersRepo {
     return next;
   }
 }
+
