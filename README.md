@@ -96,6 +96,7 @@ O frontend `apps/web` contém um protótipo de telas baseado nos HTMLs de refer�
 
 - `#/menu` (Cardápio)
 - `#/cart` (Carrinho)
+- `#/orders` (Meus Pedidos)
 - `#/login` (Login/Cadastro)
 - `#/courier` (Entregas/Motoboy)
 - `#/admin` (Admin/Painel de Pedidos)
