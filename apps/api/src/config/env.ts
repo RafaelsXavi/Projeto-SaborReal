@@ -35,6 +35,9 @@ const envSchema = z
 
     // DBs
     DATABASE_URL: z.string().url().optional(),
+    // Some Postgres providers require TLS; local Docker typically does not.
+    PG_SSL: boolFromString.optional(),
+    PG_SSL_REJECT_UNAUTHORIZED: boolFromString.optional(),
     MONGO_URI: z.string().optional(),
     MONGO_DB: z.string().default('saborreal'),
   })
@@ -78,6 +81,8 @@ export const env = {
   DEV_AUTH_ENABLED: devAuthEnabled,
 
   DATABASE_URL: parsed.DATABASE_URL,
+  PG_SSL: parsed.PG_SSL ?? false,
+  PG_SSL_REJECT_UNAUTHORIZED: parsed.PG_SSL_REJECT_UNAUTHORIZED ?? true,
   MONGO_URI: parsed.MONGO_URI,
   MONGO_DB: parsed.MONGO_DB,
 };

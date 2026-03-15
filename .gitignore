@@ -22,5 +22,8 @@ node_modules.pnpm.bak
 .npm-cache
 .docker-config
 
+# temp build outputs
+.tmp/
+
 # Local seed project (contains build artifacts/node_modules)
 Seeds-SaborReal-main/

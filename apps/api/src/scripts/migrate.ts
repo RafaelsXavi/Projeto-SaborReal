@@ -13,8 +13,8 @@ function sha256Hex(input: string) {
   return createHash('sha256').update(input, 'utf8').digest('hex');
 }
 
-async function ensureMigrationsTable(pool: Pool) {
-  await pool.query(`
+async function ensureMigrationsTable(client: { query: Pool['query'] }) {
+  await client.query(`
     create table if not exists schema_migrations (
       filename text primary key,
       checksum text not null,
@@ -23,8 +23,8 @@ async function ensureMigrationsTable(pool: Pool) {
   `);
 }
 
-async function getApplied(pool: Pool) {
-  const res = await pool.query<MigrationRow>(
+async function getApplied(client: { query: Pool['query'] }) {
+  const res = await client.query<MigrationRow>(
     'select filename, checksum from schema_migrations order by filename asc',
   );
   return new Map(res.rows.map((r) => [r.filename, r.checksum]));
@@ -35,12 +35,18 @@ async function main() {
     throw new Error('DATABASE_URL not set. Cannot run migrations.');
   }
 
-  const pool = new Pool({ connectionString: env.DATABASE_URL, max: 1 });
+  const pool = new Pool({
+    connectionString: env.DATABASE_URL,
+    max: 1,
+    ssl: env.PG_SSL
+      ? { rejectUnauthorized: env.PG_SSL_REJECT_UNAUTHORIZED }
+      : undefined,
+  });
   try {
     const client = await pool.connect();
     try {
-      await ensureMigrationsTable(pool);
-      const applied = await getApplied(pool);
+      await ensureMigrationsTable(client);
+      const applied = await getApplied(client);
 
       const migrationsDir = fileURLToPath(
         new URL('../../migrations', import.meta.url),

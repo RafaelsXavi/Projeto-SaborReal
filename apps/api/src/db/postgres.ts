@@ -11,8 +11,9 @@ export function getPgPool(): Pool | null {
   pool = new Pool({
     connectionString: env.DATABASE_URL,
     max: 10,
-    ssl:
-      env.NODE_ENV === 'production' ? { rejectUnauthorized: true } : undefined,
+    ssl: env.PG_SSL
+      ? { rejectUnauthorized: env.PG_SSL_REJECT_UNAUTHORIZED }
+      : undefined,
   });
 
   return pool;

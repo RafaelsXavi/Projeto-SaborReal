@@ -24,7 +24,8 @@
     "docker:logs": "docker compose logs -f api",
     "docker:ps": "docker compose ps",
     "dev:web": "npm -w @saborreal/web run dev",
-    "dev:all": "npm -ws --if-present --parallel run dev"
+    "dev:all": "npm -ws --if-present --parallel run dev",
+    "seed:catalog": "node node_modules/typescript/bin/tsc --target ES2022 --module commonjs --rootDir . --outDir .tmp/seed scripts/seed-real-menu.ts && node .tmp/seed/scripts/seed-real-menu.js"
   },
   "devDependencies": {
     "@biomejs/biome": "2.3.8"

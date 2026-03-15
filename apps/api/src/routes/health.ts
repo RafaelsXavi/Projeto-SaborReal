@@ -5,6 +5,17 @@ import { AppError } from '../middleware/error.js';
 
 export const healthRouter = Router();
 
+function summarizeSettled(
+  r: PromiseSettledResult<{ ok: boolean; reason?: string }>,
+) {
+  if (r.status === 'fulfilled') {
+    if (r.value.ok) return 'ok';
+    return `not_ok(${r.value.reason ?? 'unknown'})`;
+  }
+  const reason = (r.reason as { message?: unknown } | null)?.message ?? r.reason;
+  return `rejected(${String(reason)})`;
+}
+
 healthRouter.get('/', (_req, res) => {
   res.json({ ok: true, ts: new Date().toISOString() });
 });
@@ -21,7 +32,8 @@ healthRouter.get('/readyz', async (_req, res, next) => {
     const mongoOk = mongo.status === 'fulfilled' && mongo.value.ok;
 
     if (!pgOk || !mongoOk) {
-      return next(new AppError('NOT_READY', 503));
+      const msg = `NOT_READY: hasDbEnv=${Boolean(env.DATABASE_URL)} procDbEnv=${Boolean(process.env.DATABASE_URL)} pg=${summarizeSettled(pg)} mongo=${summarizeSettled(mongo)}`;
+      return next(new AppError('NOT_READY', 503, msg));
     }
 
     res.json({ ok: true });

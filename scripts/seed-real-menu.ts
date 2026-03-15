@@ -1,6 +1,4 @@
 import 'dotenv/config';
-import { resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { Pool, type PoolClient } from 'pg';
 
 type CatalogCategorySeed = {
@@ -757,14 +755,8 @@ export async function seedCatalog() {
   }
 }
 
-const isEntrypoint =
-  process.argv[1] &&
-  fileURLToPath(import.meta.url) === resolve(process.argv[1]);
-
-if (isEntrypoint) {
-  seedCatalog().catch((err) => {
-    // eslint-disable-next-line no-console
-    console.error(err);
-    process.exitCode = 1;
-  });
-}
+seedCatalog().catch((err) => {
+  // eslint-disable-next-line no-console
+  console.error(err);
+  process.exitCode = 1;
+});

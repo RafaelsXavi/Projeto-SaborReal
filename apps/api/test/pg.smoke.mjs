@@ -1,7 +1,16 @@
 import assert from 'node:assert/strict';
+import { resolve } from 'node:path';
 
-import { createApp } from '../dist/app.js';
-import { env } from '../dist/config/env.js';
+import dotenv from 'dotenv';
+
+// `npm -w @saborreal/api ...` runs with CWD = apps/api, so the root .env is ../../.env.
+// This lets `SMOKE_WITH_DB=true` work without having to copy an .env into apps/api/.
+if (!process.env.DATABASE_URL) {
+  dotenv.config({ path: resolve(process.cwd(), '../../.env') });
+}
+
+const { env } = await import('../dist/config/env.js');
+const { createApp } = await import('../dist/app.js');
 
 function parseSetCookie(setCookie) {
   const [pair] = setCookie.split(';', 1);
