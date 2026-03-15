@@ -6,6 +6,7 @@ Monorepo (workspaces) com uma API Node.js/TypeScript focada em isolamento de sup
 
 - `apps/api`: API Express (v1) com middlewares de segurança, CORS allowlist, rate limit e RBAC por rotas.
 - `packages/shared`: tipos/constantes compartilhadas (roles, status do pedido).
+- `apps/web`: protótipo de UI (Vite) consumindo a API.
 
 ## Requisitos
 
@@ -34,6 +35,7 @@ Ou ajuste a Execution Policy do PowerShell (ex.: `RemoteSigned` no escopo do usu
 - Lint (Biome): `npm run lint`
 - Test (smoke de segurança): `npm test`
 - Migrations (Postgres): `npm run db:migrate`
+- Seed do cardápio real (Postgres): `npm run seed:catalog`
 
 ## Docker (Postgres + Mongo + API)
 
@@ -45,8 +47,8 @@ Ou ajuste a Execution Policy do PowerShell (ex.: `RemoteSigned` no escopo do usu
 ## Endpoints (API)
 
 - `GET /healthz`: liveness (não depende de banco).
-- `GET /healthz/readyz`: readiness (retorna `503` se Postgres/Mongo não estiverem configurados).
-- `GET /v1/catalog`: retorna `{ items: [] }` (placeholder).
+- `GET /healthz/readyz`: readiness (retorna `503` se não conseguir pingar Postgres/Mongo).
+- `GET /v1/catalog`: retorna `{ ok, items, categories }` (cardápio via Postgres; fallback para seed em dev se migrations não existirem).
 - `POST /v1/orders`: exige role `customer`, header `Idempotency-Key` e CSRF quando usando cookie auth.
 - `GET /v1/admin/orders`: exige role `admin` (retorna `401` sem auth).
 - `POST /v1/auth/register`: cria conta `customer` (email/telefone + senha).
@@ -66,8 +68,7 @@ Ou ajuste a Execution Policy do PowerShell (ex.: `RemoteSigned` no escopo do usu
 ## Estado atual / próximos passos
 
 - Autenticação JWT (HS256) com cookies httpOnly + CSRF (double submit) foi adicionada (ver `JWT_*` no `.env.example`).
-- Implementar persistência de pedidos + idempotência no checkout.
-- Definir migrations/DDL no Postgres e esquema/coleções no Mongo (sem PII no Mongo).
+- Pedidos e catálogo já persistem no Postgres (migrations + seed do cardápio real).
 - Ajustar `trust proxy` no deploy e revisar configurações de cookies/HTTPS.
 
 ## Postgres (migrations + smoke test DB)
@@ -79,8 +80,12 @@ Ou ajuste a Execution Policy do PowerShell (ex.: `RemoteSigned` no escopo do usu
 - `npm run db:migrate`
   - Em produção (container): `npm -w @saborreal/api run build` e depois `npm -w @saborreal/api run db:migrate:prod`
 
-3) (Opcional) Smoke test com Postgres (auth real + orders):
-- `npm run test:db`
+3) Faça seed do cardápio real:
+- `npm run seed:catalog`
+
+4) (Opcional) Smoke test com Postgres (auth real + orders):
+- Linux/macOS: `SMOKE_WITH_DB=true npm run test:db`
+- Windows (PowerShell): `$env:SMOKE_WITH_DB='true'; npm.cmd run test:db`
 
 ## Frontend (web)
 
