@@ -230,9 +230,11 @@ export class PgOrdersRepo {
         throw new Error('ORDER_NOT_AVAILABLE');
       }
 
+      // Commit before reading through the pool (otherwise another connection may see stale data).
+      await client.query('commit');
+
       const order = await this.getById(row.id);
       if (!order) throw new Error('ORDER_NOT_FOUND');
-      await client.query('commit');
       return order;
     } catch (err) {
       await client.query('rollback');

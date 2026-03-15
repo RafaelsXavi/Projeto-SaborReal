@@ -36,6 +36,7 @@ Ou ajuste a Execution Policy do PowerShell (ex.: `RemoteSigned` no escopo do usu
 - Test (smoke de segurança): `npm test`
 - Migrations (Postgres): `npm run db:migrate`
 - Seed do cardápio real (Postgres): `npm run seed:catalog`
+- Suite de testes (API): `npm -w @saborreal/api run test:all`
 
 ## Docker (Postgres + Mongo + API)
 
@@ -86,6 +87,12 @@ Ou ajuste a Execution Policy do PowerShell (ex.: `RemoteSigned` no escopo do usu
 4) (Opcional) Smoke test com Postgres (auth real + orders):
 - Linux/macOS: `SMOKE_WITH_DB=true npm run test:db`
 - Windows (PowerShell): `$env:SMOKE_WITH_DB='true'; npm.cmd run test:db`
+
+Se no Windows o driver do Docker/WSL deixar a conexao `pg` instavel via `127.0.0.1:5432` (ex.: erro `Connection terminated unexpectedly`), rode os testes com DB dentro do container `api` montando apenas os arquivos de teste:
+
+- `docker compose run --rm -e SMOKE_WITH_DB=true -v ${PWD}/apps/api/test:/app/apps/api/test api node --import dotenv/config apps/api/test/pg.smoke.mjs`
+- `docker compose run --rm -e SMOKE_WITH_DB=true -v ${PWD}/apps/api/test:/app/apps/api/test api node --import dotenv/config apps/api/test/catalog.pg.smoke.mjs`
+- `docker compose run --rm -e SMOKE_WITH_DB=true -v ${PWD}/apps/api/test:/app/apps/api/test api node --import dotenv/config apps/api/test/orders.e2e.pg.smoke.mjs`
 
 ## Checklist Para Finalizar E Subir (MVP)
 

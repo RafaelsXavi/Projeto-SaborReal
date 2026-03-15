@@ -12,7 +12,10 @@
     "db:migrate:prod": "node dist/scripts/migrate.js",
     "start": "node dist/server.js",
     "test": "npm run build \u0026\u0026 node test/security.smoke.mjs",
-    "test:db": "npm run build \u0026\u0026 node --import dotenv/config test/pg.smoke.mjs"
+    "test:db": "npm run build \u0026\u0026 node --import dotenv/config test/pg.smoke.mjs",
+    "test:catalog": "npm run build \u0026\u0026 node --import dotenv/config test/catalog.pg.smoke.mjs",
+    "test:e2e": "npm run build \u0026\u0026 node --import dotenv/config test/orders.e2e.pg.smoke.mjs",
+    "test:all": "npm run build \u0026\u0026 node test/security.smoke.mjs \u0026\u0026 node --import dotenv/config test/pg.smoke.mjs \u0026\u0026 node --import dotenv/config test/catalog.pg.smoke.mjs \u0026\u0026 node --import dotenv/config test/orders.e2e.pg.smoke.mjs"
   },
   "dependencies": {
     "@saborreal/shared": "file:../../packages/shared",

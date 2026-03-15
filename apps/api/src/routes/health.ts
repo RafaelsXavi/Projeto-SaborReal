@@ -32,6 +32,11 @@ healthRouter.get('/readyz', async (_req, res, next) => {
     const mongoOk = mongo.status === 'fulfilled' && mongo.value.ok;
 
     if (!pgOk || !mongoOk) {
+      // In production, keep readiness failure reasons out of the response body.
+      if (env.NODE_ENV === 'production') {
+        return next(new AppError('NOT_READY', 503));
+      }
+
       const msg = `NOT_READY: hasDbEnv=${Boolean(env.DATABASE_URL)} procDbEnv=${Boolean(process.env.DATABASE_URL)} pg=${summarizeSettled(pg)} mongo=${summarizeSettled(mongo)}`;
       return next(new AppError('NOT_READY', 503, msg));
     }
