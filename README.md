@@ -87,6 +87,32 @@ Ou ajuste a Execution Policy do PowerShell (ex.: `RemoteSigned` no escopo do usu
 - Linux/macOS: `SMOKE_WITH_DB=true npm run test:db`
 - Windows (PowerShell): `$env:SMOKE_WITH_DB='true'; npm.cmd run test:db`
 
+## Checklist Para Finalizar E Subir (MVP)
+
+- Garantir que nada esteja ocupando a porta `3001` antes de subir o Docker (senão o container da API nao responde).
+- Definir variaveis de producao no `.env` (ou no provedor):
+- `JWT_SECRET` forte (32+ bytes aleatorios).
+- `DEV_AUTH_ENABLED=false` (nao permitir criar admin/courier por endpoint de dev em producao).
+- `CORS_ORIGINS` com o(s) dominio(s) do frontend.
+- `TRUST_PROXY=true` se estiver atras de proxy/load balancer.
+- `DATABASE_URL` e `MONGO_URI` apontando para os servicos corretos do ambiente.
+- `PG_SSL=true` apenas se o Postgres do provedor exigir TLS; em Docker local normalmente fica `false`.
+- Rodar `npm run db:migrate` no ambiente-alvo.
+- Rodar `npm run seed:catalog` no ambiente-alvo (uma vez).
+- Validar healthchecks:
+- `GET /healthz` retorna `200`.
+- `GET /healthz/readyz` retorna `200` (Postgres/Mongo ok).
+- Validar seed real:
+- `GET /v1/catalog` retorna `items` com ~49 itens e `categories` com ~8 categorias.
+- Smoke tests:
+- `npm test` (smoke de seguranca).
+- `SMOKE_WITH_DB=true npm run test:db` (fluxo real com Postgres).
+- Validacao manual end-to-end (web):
+- Criar usuario `customer`, fazer pedido em `#/menu` -> `#/cart`.
+- Acessar `#/admin` (admin) e avancar status do pedido.
+- Acessar `#/courier` (motoboy) e aceitar/concluir entrega.
+- Verificar `#/orders` atualizando status.
+
 ## Frontend (web)
 
 - Dev (web): `npm run dev:web`
