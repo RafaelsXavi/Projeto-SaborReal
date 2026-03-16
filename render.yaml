@@ -1,0 +1,39 @@
+services:
+  - type: postgres
+    name: saborreal-postgres
+    region: ohio  # or closest
+    plan: starter
+
+  - type: web
+    name: saborreal-api
+    env: docker
+    dockerfilePath: ./apps/api/Dockerfile
+    repo: https://github.com/YOUR_USERNAME/projeto-saborreal  # UPDATE with your GitHub repo
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - fromDatabase:
+          name: saborreal-postgres
+          property: connectionString
+        sync: false  # Set manually as DATABASE_URL
+      - key: JWT_SECRET
+        generateValue: true  # Or paste the generated one
+      - key: CORS_ORIGINS
+        value: https://saborreal-web.onrender.com  # UPDATE after web service created
+      - key: TRUST_PROXY
+        value: 'true'
+      - key: DEV_AUTH_ENABLED
+        value: 'false'
+    healthCheckPath: /healthz
+    port: 10000  # Render auto-injects $PORT
+
+  - type: web
+    name: saborreal-web
+    env: static
+    repo: https://github.com/YOUR_USERNAME/projeto-saborreal  # UPDATE
+    rootDir: apps/web
+    envVars:
+      - key: VITE_API_URL
+        value: https://saborreal-api.onrender.com
+    buildCommand: npm ci && npm run build
+    publishPath: dist
