@@ -27,6 +27,12 @@ export const adminUpdateOrderStatus: RequestHandler = async (
       if (err.message === 'ORDER_NOT_FOUND') {
         return next(new AppError('ORDER_NOT_FOUND', 404));
       }
+      if (err.message === 'ORDER_COURIER_REQUIRED') {
+        return next(new AppError('ORDER_COURIER_REQUIRED', 409));
+      }
+      if (err.message === 'ORDER_INVALID_STATUS_TRANSITION') {
+        return next(new AppError('ORDER_INVALID_STATUS_TRANSITION', 409));
+      }
       throw err;
     }
   } catch (err) {

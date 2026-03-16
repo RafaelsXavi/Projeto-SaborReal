@@ -50,6 +50,47 @@ function toOrder(row: OrderRow, lines: OrderLine[]): Order {
   return base;
 }
 
+const FLOW_RANK: Record<Exclude<Order['status'], 'CANCELLED'>, number> = {
+  PLACED: 1,
+  PREPARING: 2,
+  READY_FOR_PICKUP: 3,
+  OUT_FOR_DELIVERY: 4,
+  COMPLETED: 5,
+};
+
+function validateStatusUpdate(input: {
+  currentStatus: Order['status'];
+  courierId: string | null;
+  nextStatus: Order['status'];
+}) {
+  const { currentStatus, nextStatus, courierId } = input;
+
+  if (nextStatus === currentStatus) return;
+
+  if (currentStatus === 'CANCELLED' || currentStatus === 'COMPLETED') {
+    throw new Error('ORDER_INVALID_STATUS_TRANSITION');
+  }
+
+  if (nextStatus === 'CANCELLED') return;
+
+  if (nextStatus === 'OUT_FOR_DELIVERY' || nextStatus === 'COMPLETED') {
+    if (!courierId) throw new Error('ORDER_COURIER_REQUIRED');
+  }
+
+  if (courierId) {
+    const nextRank = FLOW_RANK[nextStatus];
+    if (nextRank < FLOW_RANK.OUT_FOR_DELIVERY) {
+      throw new Error('ORDER_INVALID_STATUS_TRANSITION');
+    }
+  }
+
+  const currentRank = FLOW_RANK[currentStatus];
+  const nextRank = FLOW_RANK[nextStatus];
+  if (nextRank < currentRank) {
+    throw new Error('ORDER_INVALID_STATUS_TRANSITION');
+  }
+}
+
 export class PgOrdersRepo {
   constructor(private pool: Pool) {}
 
@@ -188,7 +229,7 @@ export class PgOrdersRepo {
     const oRes = await this.pool.query<OrderRow>(
       `select id, user_id, status, created_at, courier_id
        from orders
-       where courier_id is null and status <> 'CANCELLED'
+       where courier_id is null and status = 'READY_FOR_PICKUP'
        order by created_at asc`,
     );
     return this.attachLines(oRes.rows);
@@ -207,7 +248,7 @@ export class PgOrdersRepo {
              status = 'OUT_FOR_DELIVERY'
          where id = $1
            and courier_id is null
-           and status <> 'CANCELLED'
+           and status = 'READY_FOR_PICKUP'
          returning id, user_id, status, created_at, courier_id`,
         [input.orderId, input.courierId],
       );
@@ -227,6 +268,8 @@ export class PgOrdersRepo {
         const cur = current.rows[0];
         if (cur?.status === 'CANCELLED') throw new Error('ORDER_NOT_AVAILABLE');
         if (cur?.courier_id) throw new Error('ORDER_ALREADY_ASSIGNED');
+        if (cur?.status !== 'READY_FOR_PICKUP')
+          throw new Error('ORDER_NOT_READY_FOR_PICKUP');
         throw new Error('ORDER_NOT_AVAILABLE');
       }
 
@@ -248,6 +291,30 @@ export class PgOrdersRepo {
     orderId: string;
     status: Order['status'];
   }): Promise<Order> {
+    const current = await this.pool.query<
+      Pick<OrderRow, 'status' | 'courier_id'>
+    >(
+      `select status, courier_id
+       from orders
+       where id = $1
+       limit 1`,
+      [input.orderId],
+    );
+    const cur = current.rows[0];
+    if (!cur) throw new Error('ORDER_NOT_FOUND');
+
+    validateStatusUpdate({
+      currentStatus: cur.status,
+      courierId: cur.courier_id,
+      nextStatus: input.status,
+    });
+
+    if (input.status === cur.status) {
+      const order = await this.getById(input.orderId);
+      if (!order) throw new Error('ORDER_NOT_FOUND');
+      return order;
+    }
+
     const res = await this.pool.query<OrderRow>(
       `update orders
        set status = $2

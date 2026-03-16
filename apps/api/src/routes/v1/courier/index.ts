@@ -60,6 +60,9 @@ courierRouter.post('/orders/:id/accept', async (req, res, next) => {
       if (err.message === 'ORDER_NOT_AVAILABLE') {
         return next(new AppError('ORDER_NOT_AVAILABLE', 409));
       }
+      if (err.message === 'ORDER_NOT_READY_FOR_PICKUP') {
+        return next(new AppError('ORDER_NOT_READY_FOR_PICKUP', 409));
+      }
       throw err;
     }
   } catch (err) {

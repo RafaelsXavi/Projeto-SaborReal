@@ -186,6 +186,79 @@ await run('Orders: customer can cancel own order', async () => {
   });
 });
 
+await run('Orders: courier can only accept READY_FOR_PICKUP', async () => {
+  await withServer(async (baseUrl) => {
+    const customerToken = accessTokenFor({
+      userId: crypto.randomUUID(),
+      role: 'customer',
+    });
+    const adminToken = accessTokenFor({
+      userId: crypto.randomUUID(),
+      role: 'admin',
+    });
+    const courierToken = accessTokenFor({
+      userId: crypto.randomUUID(),
+      role: 'courier',
+    });
+
+    const place = await fetch(`${baseUrl}/v1/orders`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${customerToken}`,
+        'Idempotency-Key': 'accept-1',
+      },
+      body: JSON.stringify({ lines: [{ id: 'x-burger', qty: 1 }] }),
+    });
+    assert.equal(place.status, 201);
+    const placed = await place.json();
+    const orderId = placed.order.id;
+    assert.ok(orderId);
+
+    const earlyAccept = await fetch(
+      `${baseUrl}/v1/courier/orders/${orderId}/accept`,
+      { method: 'POST', headers: { Authorization: `Bearer ${courierToken}` } },
+    );
+    assert.equal(earlyAccept.status, 409);
+    const earlyBody = await earlyAccept.json();
+    assert.equal(earlyBody.error?.code, 'ORDER_NOT_READY_FOR_PICKUP');
+
+    const invalidAdvance = await fetch(
+      `${baseUrl}/v1/admin/orders/${orderId}/status`,
+      {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${adminToken}`,
+        },
+        body: JSON.stringify({ status: 'OUT_FOR_DELIVERY' }),
+      },
+    );
+    assert.equal(invalidAdvance.status, 409);
+    const invalidBody = await invalidAdvance.json();
+    assert.equal(invalidBody.error?.code, 'ORDER_COURIER_REQUIRED');
+
+    const ready = await fetch(`${baseUrl}/v1/admin/orders/${orderId}/status`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${adminToken}`,
+      },
+      body: JSON.stringify({ status: 'READY_FOR_PICKUP' }),
+    });
+    assert.equal(ready.status, 200);
+
+    const okAccept = await fetch(
+      `${baseUrl}/v1/courier/orders/${orderId}/accept`,
+      { method: 'POST', headers: { Authorization: `Bearer ${courierToken}` } },
+    );
+    assert.equal(okAccept.status, 200);
+    const okBody = await okAccept.json();
+    assert.equal(okBody.ok, true);
+    assert.equal(okBody.order?.status, 'OUT_FOR_DELIVERY');
+  });
+});
+
 await run('RBAC: courier cannot place orders', async () => {
   await withServer(async (baseUrl) => {
     const accessToken = accessTokenFor({

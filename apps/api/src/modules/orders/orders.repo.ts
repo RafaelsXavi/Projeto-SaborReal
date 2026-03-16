@@ -22,6 +22,47 @@ function hashBody(value: unknown) {
   return createHash('sha256').update(canonical).digest('hex');
 }
 
+const FLOW_RANK: Record<Exclude<Order['status'], 'CANCELLED'>, number> = {
+  PLACED: 1,
+  PREPARING: 2,
+  READY_FOR_PICKUP: 3,
+  OUT_FOR_DELIVERY: 4,
+  COMPLETED: 5,
+};
+
+function validateStatusUpdate(input: {
+  currentStatus: Order['status'];
+  courierId: string | null;
+  nextStatus: Order['status'];
+}) {
+  const { currentStatus, nextStatus, courierId } = input;
+
+  if (nextStatus === currentStatus) return;
+
+  if (currentStatus === 'CANCELLED' || currentStatus === 'COMPLETED') {
+    throw new Error('ORDER_INVALID_STATUS_TRANSITION');
+  }
+
+  if (nextStatus === 'CANCELLED') return;
+
+  if (nextStatus === 'OUT_FOR_DELIVERY' || nextStatus === 'COMPLETED') {
+    if (!courierId) throw new Error('ORDER_COURIER_REQUIRED');
+  }
+
+  if (courierId) {
+    const nextRank = FLOW_RANK[nextStatus];
+    if (nextRank < FLOW_RANK.OUT_FOR_DELIVERY) {
+      throw new Error('ORDER_INVALID_STATUS_TRANSITION');
+    }
+  }
+
+  const currentRank = FLOW_RANK[currentStatus];
+  const nextRank = FLOW_RANK[nextStatus];
+  if (nextRank < currentRank) {
+    throw new Error('ORDER_INVALID_STATUS_TRANSITION');
+  }
+}
+
 export class InMemoryOrdersRepo {
   private orders = new Map<string, Order>();
   private idempotency = new Map<string, IdempotencyRecord>();
@@ -76,7 +117,7 @@ export class InMemoryOrdersRepo {
 
   listAvailableForCourier(): Order[] {
     return this.listAll().filter(
-      (o) => !o.courierId && o.status !== 'CANCELLED',
+      (o) => !o.courierId && o.status === 'READY_FOR_PICKUP',
     );
   }
 
@@ -89,6 +130,8 @@ export class InMemoryOrdersRepo {
     if (!order) throw new Error('ORDER_NOT_FOUND');
     if (order.courierId) throw new Error('ORDER_ALREADY_ASSIGNED');
     if (order.status === 'CANCELLED') throw new Error('ORDER_NOT_AVAILABLE');
+    if (order.status !== 'READY_FOR_PICKUP')
+      throw new Error('ORDER_NOT_READY_FOR_PICKUP');
 
     const next: Order = {
       ...order,
@@ -102,6 +145,14 @@ export class InMemoryOrdersRepo {
   updateStatus(input: { orderId: string; status: Order['status'] }): Order {
     const order = this.orders.get(input.orderId);
     if (!order) throw new Error('ORDER_NOT_FOUND');
+
+    validateStatusUpdate({
+      currentStatus: order.status,
+      courierId: order.courierId ?? null,
+      nextStatus: input.status,
+    });
+
+    if (input.status === order.status) return order;
 
     const next: Order = { ...order, status: input.status };
     this.orders.set(order.id, next);
@@ -133,4 +184,3 @@ export class InMemoryOrdersRepo {
     return next;
   }
 }
-

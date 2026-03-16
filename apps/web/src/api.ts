@@ -30,6 +30,24 @@ export function userFriendlyError(value: unknown) {
         return 'Sessão inválida (CSRF). Refaça o login.';
       case 'IDEMPOTENCY_KEY_REUSED':
         return 'Idempotency-Key reutilizada com payload diferente.';
+      case 'ORDER_NOT_READY_FOR_PICKUP':
+        return 'Este pedido ainda não está pronto para retirada.';
+      case 'ORDER_COURIER_REQUIRED':
+        return 'Aguardando um motoboy aceitar o pedido.';
+      case 'ORDER_ALREADY_ASSIGNED':
+        return 'Este pedido já foi atribuído a outro motoboy.';
+      case 'ORDER_INVALID_STATUS_TRANSITION':
+        return 'Transição de status inválida para este pedido.';
+      case 'ORDER_NOT_AVAILABLE':
+        return 'Pedido não está disponível.';
+      case 'ORDER_NOT_ASSIGNED':
+        return 'Pedido ainda não foi atribuído.';
+      case 'ORDER_NOT_COMPLETABLE':
+        return 'Pedido não pode ser finalizado neste estado.';
+      case 'ORDER_NOT_CANCELLABLE':
+        return 'Pedido não pode ser cancelado neste estado.';
+      case 'ORDER_NOT_FOUND':
+        return 'Pedido não encontrado.';
       default:
         return value.message;
     }
@@ -95,4 +113,3 @@ export async function apiFetch(
 
   throw err;
 }
-

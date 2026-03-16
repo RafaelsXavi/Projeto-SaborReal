@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { apiFetch, userFriendlyError } from '../api';
 import { MaterialIcon } from '../components/MaterialIcon';
 import { useAuth } from '../hooks/useAuth';
@@ -87,6 +87,7 @@ export function AdminOrdersPage() {
   const [busy, setBusy] = useState(false);
 
   const forbidden = user ? user.role !== 'admin' : true;
+  const adminId = user?.role === 'admin' ? user.userId : null;
 
   const itemById = useMemo(() => {
     const m = new Map<string, { name: string; priceCents: number }>();
@@ -96,8 +97,8 @@ export function AdminOrdersPage() {
     return m;
   }, [catalog]);
 
-  async function refresh() {
-    if (!user || user.role !== 'admin') return;
+  const refresh = useCallback(async () => {
+    if (!adminId) return;
     setLoading(true);
     setError(null);
     try {
@@ -105,18 +106,17 @@ export function AdminOrdersPage() {
       const data = (await res.json()) as { ok: boolean; orders: ApiOrder[] };
       const list = Array.isArray(data.orders) ? data.orders : [];
       setOrders(list);
-      if (!selectedId && list[0]?.id) setSelectedId(list[0].id);
+      setSelectedId((prev) => prev || list[0]?.id || '');
     } catch (e: unknown) {
       setError(userFriendlyError(e));
     } finally {
       setLoading(false);
     }
-  }
+  }, [adminId]);
 
   useEffect(() => {
     void refresh();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.userId, user?.role]);
+  }, [refresh]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -320,7 +320,9 @@ export function AdminOrdersPage() {
                     </p>
                     <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
                       Itens: {o.lines.reduce((s, l) => s + l.qty, 0)}
-                      {o.courierId ? ` • Courier: ${o.courierId.slice(0, 8)}` : ''}
+                      {o.courierId
+                        ? ` • Courier: ${o.courierId.slice(0, 8)}`
+                        : ''}
                     </p>
                   </div>
                   <div className="flex flex-col items-end gap-2">
@@ -366,7 +368,10 @@ export function AdminOrdersPage() {
                             statusPillClass(selected.status),
                           ].join(' ')}
                         >
-                          <MaterialIcon name="receipt_long" className="text-sm" />
+                          <MaterialIcon
+                            name="receipt_long"
+                            className="text-sm"
+                          />
                           {statusLabel(selected.status)}
                         </span>
                       </div>
@@ -393,7 +398,10 @@ export function AdminOrdersPage() {
                         const name = it?.name ?? l.id;
                         const price = it?.priceCents ?? 0;
                         return (
-                          <div className="flex items-center justify-between" key={l.id}>
+                          <div
+                            className="flex items-center justify-between"
+                            key={l.id}
+                          >
                             <div className="flex items-center gap-3">
                               <span className="w-8 h-8 bg-primary/10 text-primary font-bold flex items-center justify-center rounded-lg text-xs">
                                 {l.qty}x
@@ -435,17 +443,35 @@ export function AdminOrdersPage() {
                     className="flex-1 py-3 bg-rose-500/10 text-rose-600 rounded-xl font-bold hover:bg-rose-500/20 transition-colors disabled:opacity-60"
                     type="button"
                     onClick={() => setStatus(selected.id, 'CANCELLED')}
-                    disabled={busy || selected.status === 'COMPLETED' || selected.status === 'CANCELLED'}
+                    disabled={
+                      busy ||
+                      selected.status === 'COMPLETED' ||
+                      selected.status === 'CANCELLED'
+                    }
                   >
                     Cancelar
                   </button>
                   <button
                     className="flex-[2] py-3 bg-primary text-white rounded-xl font-bold hover:brightness-110 transition-all shadow-lg shadow-primary/20 disabled:opacity-60"
                     type="button"
-                    onClick={() => setStatus(selected.id, nextStatus(selected.status))}
-                    disabled={busy || selected.status === 'COMPLETED' || selected.status === 'CANCELLED'}
+                    onClick={() =>
+                      setStatus(selected.id, nextStatus(selected.status))
+                    }
+                    disabled={
+                      busy ||
+                      selected.status === 'COMPLETED' ||
+                      selected.status === 'CANCELLED' ||
+                      selected.status === 'READY_FOR_PICKUP' ||
+                      selected.status === 'OUT_FOR_DELIVERY'
+                    }
                   >
-                    Avançar Status
+                    {busy
+                      ? 'Atualizando...'
+                      : selected.status === 'READY_FOR_PICKUP'
+                        ? 'Aguardando motoboy'
+                        : selected.status === 'OUT_FOR_DELIVERY'
+                          ? 'Em entrega'
+                          : 'Avançar Status'}
                   </button>
                 </div>
               </div>
@@ -459,19 +485,31 @@ export function AdminOrdersPage() {
       </main>
 
       <nav className="fixed bottom-0 left-0 right-0 bg-white dark:bg-background-dark border-t border-primary/10 flex justify-around p-2 md:hidden z-50">
-        <a className="flex flex-col items-center p-2 text-primary" href="#/admin">
+        <a
+          className="flex flex-col items-center p-2 text-primary"
+          href="#/admin"
+        >
           <MaterialIcon name="receipt_long" />
           <span className="text-[10px] font-bold">Pedidos</span>
         </a>
-        <a className="flex flex-col items-center p-2 text-slate-400" href="#/menu">
+        <a
+          className="flex flex-col items-center p-2 text-slate-400"
+          href="#/menu"
+        >
           <MaterialIcon name="restaurant_menu" />
           <span className="text-[10px] font-bold">Cardápio</span>
         </a>
-        <a className="flex flex-col items-center p-2 text-slate-400" href="#/courier">
+        <a
+          className="flex flex-col items-center p-2 text-slate-400"
+          href="#/courier"
+        >
           <MaterialIcon name="two_wheeler" />
           <span className="text-[10px] font-bold">Motoboy</span>
         </a>
-        <a className="flex flex-col items-center p-2 text-slate-400" href="#/login">
+        <a
+          className="flex flex-col items-center p-2 text-slate-400"
+          href="#/login"
+        >
           <MaterialIcon name="person" />
           <span className="text-[10px] font-bold">Conta</span>
         </a>
@@ -484,7 +522,8 @@ export function AdminOrdersPage() {
           </div>
           <h2 className="text-2xl font-bold mb-2">Acesso Restrito</h2>
           <p className="text-slate-500 dark:text-slate-400 max-w-sm mb-8">
-            Você não tem permissão para acessar esta área do painel administrativo.
+            Você não tem permissão para acessar esta área do painel
+            administrativo.
           </p>
           <button
             className="bg-primary text-white px-8 py-3 rounded-xl font-bold shadow-lg shadow-primary/20"
@@ -498,4 +537,3 @@ export function AdminOrdersPage() {
     </div>
   );
 }
-
