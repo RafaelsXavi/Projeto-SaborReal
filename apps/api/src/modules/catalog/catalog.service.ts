@@ -2,49 +2,58 @@ import { getPgPool } from '../../db/postgres.js';
 import { seedCatalog } from './catalog.seed.js';
 import type { CatalogResponse } from './catalog.types.js';
 
+const CATALOG_CACHE_TTL_MS = 30_000;
+let catalogCache: { at: number; value: CatalogResponse } | null = null;
+
 export async function listCatalog(): Promise<CatalogResponse> {
   const pool = getPgPool();
   if (!pool) return seedCatalog;
 
+  const now = Date.now();
+  if (catalogCache && now - catalogCache.at < CATALOG_CACHE_TTL_MS) {
+    return catalogCache.value;
+  }
+
   // If migrations weren't applied, fall back to seed in dev.
   try {
-    const categoriesRes = await pool.query<{
-      id: string;
-      name: string;
-      sort_order: number;
-    }>(
-      `select id, name, sort_order
-       from catalog_categories
-       order by sort_order asc, name asc`,
-    );
+    const [categoriesRes, itemsRes] = await Promise.all([
+      pool.query<{
+        id: string;
+        name: string;
+        sort_order: number;
+      }>(
+        `select id, name, sort_order
+         from catalog_categories
+         order by sort_order asc, name asc`,
+      ),
+      pool.query<{
+        id: string;
+        name: string;
+        description: string;
+        price_cents: number;
+        category_id: string;
+        category_name: string;
+        image_url: string;
+        available: boolean;
+        sort_order: number;
+      }>(
+        `select
+           i.id,
+           i.name,
+           i.description,
+           i.price_cents,
+           i.category_id,
+           c.name as category_name,
+           i.image_url,
+           i.available,
+           c.sort_order
+         from catalog_items i
+         join catalog_categories c on c.id = i.category_id
+         order by c.sort_order asc, i.name asc`,
+      ),
+    ]);
 
-    const itemsRes = await pool.query<{
-      id: string;
-      name: string;
-      description: string;
-      price_cents: number;
-      category_id: string;
-      category_name: string;
-      image_url: string;
-      available: boolean;
-      sort_order: number;
-    }>(
-      `select
-         i.id,
-         i.name,
-         i.description,
-         i.price_cents,
-         i.category_id,
-         c.name as category_name,
-         i.image_url,
-         i.available,
-         c.sort_order
-       from catalog_items i
-       join catalog_categories c on c.id = i.category_id
-       order by c.sort_order asc, i.name asc`,
-    );
-
-    return {
+    const value: CatalogResponse = {
       categories: categoriesRes.rows.map((r) => ({
         id: r.id,
         name: r.name,
@@ -61,6 +70,8 @@ export async function listCatalog(): Promise<CatalogResponse> {
         available: r.available,
       })),
     };
+    catalogCache = { at: now, value };
+    return value;
   } catch (err) {
     // Postgres "undefined_table" is 42P01.
     const code = (err as { code?: unknown } | null)?.code;

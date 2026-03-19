@@ -125,12 +125,14 @@ async function fetchCatalog(): Promise<{
   let categories = categoriesRaw.filter(isCatalogCategory);
 
   if (categories.length > 0) {
-    categories = categories.slice().sort((a: CatalogCategory, b: CatalogCategory) => {
-      const sa = a.sortOrder ?? 9999;
-      const sb = b.sortOrder ?? 9999;
-      if (sa !== sb) return sa - sb;
-      return a.name.localeCompare(b.name);
-    });
+    categories = categories
+      .slice()
+      .sort((a: CatalogCategory, b: CatalogCategory) => {
+        const sa = a.sortOrder ?? 9999;
+        const sb = b.sortOrder ?? 9999;
+        if (sa !== sb) return sa - sb;
+        return a.name.localeCompare(b.name);
+      });
   } else if (items.length > 0) {
     const byName = new Map<string, CatalogCategory>();
     for (const it of items) {

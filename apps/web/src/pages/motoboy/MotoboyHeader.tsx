@@ -24,6 +24,7 @@ export function MotoboyHeader() {
         </div>
         <div className="flex items-center gap-2">
           <button
+            type="button"
             className="rounded-xl p-2 text-slate-600 transition-all active:scale-95 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
             onClick={toggle}
             aria-label="Alternar tema"
@@ -32,6 +33,7 @@ export function MotoboyHeader() {
           </button>
           <div className="mx-1 h-8 w-[1px] bg-slate-200 dark:bg-slate-800" />
           <button
+            type="button"
             onClick={() => logout()}
             className="flex items-center gap-2 rounded-xl px-3 py-2 font-bold text-rose-500 transition-all active:scale-95 hover:bg-rose-500/10"
           >

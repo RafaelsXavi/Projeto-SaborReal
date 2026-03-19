@@ -1,6 +1,11 @@
 import { createHash, randomUUID } from 'node:crypto';
 import type { Pool } from 'pg';
-import type { EnrichedOrder, EnrichedOrderLine, Order, OrderLine } from './orders.types.js';
+import type {
+  EnrichedOrder,
+  EnrichedOrderLine,
+  Order,
+  OrderLine,
+} from './orders.types.js';
 
 function stableStringify(value: unknown): string {
   if (value === null) return 'null';
@@ -447,7 +452,9 @@ export class PgOrdersRepo {
     return this.attachEnrichedLines(oRes.rows);
   }
 
-  private async attachEnrichedLines(orders: OrderRow[]): Promise<EnrichedOrder[]> {
+  private async attachEnrichedLines(
+    orders: OrderRow[],
+  ): Promise<EnrichedOrder[]> {
     if (orders.length === 0) return [];
 
     const orderIds = orders.map((o) => o.id);
@@ -478,7 +485,11 @@ export class PgOrdersRepo {
     const grouped = new Map<string, EnrichedOrderLine[]>();
     for (const row of lRes.rows) {
       const arr = grouped.get(row.order_id) ?? [];
-      arr.push({ id: row.item_id, qty: row.qty, name: row.item_name ?? row.item_id });
+      arr.push({
+        id: row.item_id,
+        qty: row.qty,
+        name: row.item_name ?? row.item_id,
+      });
       grouped.set(row.order_id, arr);
     }
 

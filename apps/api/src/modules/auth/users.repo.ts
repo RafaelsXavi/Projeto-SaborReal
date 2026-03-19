@@ -89,19 +89,29 @@ export class PgUsersRepo {
        order by created_at desc`,
       [role],
     );
-    return res.rows.map((r: { id: string; email: string | null; phone: string | null; role: Role }) => ({
-      id: r.id,
-      email: r.email,
-      phone: r.phone,
-      role: r.role,
-    }));
+    return res.rows.map(
+      (r: {
+        id: string;
+        email: string | null;
+        phone: string | null;
+        role: Role;
+      }) => ({
+        id: r.id,
+        email: r.email,
+        phone: r.phone,
+        role: r.role,
+      }),
+    );
   }
 
-  async update(id: string, input: {
-    email?: string | null;
-    phone?: string | null;
-    passwordHash?: string;
-  }): Promise<DbUser | null> {
+  async update(
+    id: string,
+    input: {
+      email?: string | null;
+      phone?: string | null;
+      passwordHash?: string;
+    },
+  ): Promise<DbUser | null> {
     const sets: string[] = [];
     const params: unknown[] = [];
     let idx = 1;

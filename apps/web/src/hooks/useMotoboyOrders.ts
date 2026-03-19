@@ -72,8 +72,14 @@ export function useMotoboyOrders() {
     available: availableQuery.data || [],
     assigned: assignedQuery.data || [],
     loading: availableQuery.isLoading || assignedQuery.isLoading,
+    refresh: () => queryClient.invalidateQueries({ queryKey: ['motoboy'] }),
     accept: acceptMutation.mutateAsync,
     complete: completeMutation.mutateAsync,
     isProcessing: acceptMutation.isPending || completeMutation.isPending,
+    error:
+      availableQuery.error ||
+      assignedQuery.error ||
+      acceptMutation.error ||
+      completeMutation.error,
   };
 }

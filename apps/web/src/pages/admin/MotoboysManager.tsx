@@ -32,7 +32,10 @@ const MotoboyRow = memo(function MotoboyRow({
     <div className="flex flex-col gap-3 rounded-2xl border border-primary/5 bg-white p-4 shadow-sm transition-all hover:shadow-md dark:bg-slate-900/40 sm:flex-row sm:items-center sm:justify-between">
       <div className="flex items-center gap-3 sm:gap-4">
         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary sm:h-12 sm:w-12">
-          <MaterialIcon name="delivery_dining" className="text-xl sm:text-2xl" />
+          <MaterialIcon
+            name="delivery_dining"
+            className="text-xl sm:text-2xl"
+          />
         </div>
         <div className="min-w-0">
           <p className="truncate font-bold text-slate-900 dark:text-slate-100">
@@ -46,6 +49,7 @@ const MotoboyRow = memo(function MotoboyRow({
       </div>
       <div className="flex items-center gap-2 self-end sm:self-auto">
         <button
+          type="button"
           onClick={() => onEdit(motoboy)}
           className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 text-slate-500 transition-all hover:bg-slate-50 hover:text-primary dark:border-slate-700 dark:hover:bg-slate-800 sm:h-10 sm:w-10"
           title="Editar"
@@ -53,6 +57,7 @@ const MotoboyRow = memo(function MotoboyRow({
           <MaterialIcon name="edit" className="text-base sm:text-lg" />
         </button>
         <button
+          type="button"
           onClick={() => onDelete(motoboy.id)}
           disabled={disabled}
           className="flex h-9 w-9 items-center justify-center rounded-xl border border-red-200 text-red-400 transition-all hover:bg-red-50 hover:text-red-500 disabled:opacity-50 dark:border-red-800 dark:hover:bg-red-950/30 sm:h-10 sm:w-10"
@@ -88,7 +93,11 @@ export function MotoboysManager() {
   );
 
   const createMutation = useMutation({
-    mutationFn: async (input: { identifier: string; password: string; phone?: string }) => {
+    mutationFn: async (input: {
+      identifier: string;
+      password: string;
+      phone?: string;
+    }) => {
       const res = await apiFetch('/v1/admin/motoboys', {
         method: 'POST',
         body: JSON.stringify(input),
@@ -104,7 +113,15 @@ export function MotoboysManager() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: async ({ id, ...body }: { id: string; email?: string; phone?: string; password?: string }) => {
+    mutationFn: async ({
+      id,
+      ...body
+    }: {
+      id: string;
+      email?: string;
+      phone?: string;
+      password?: string;
+    }) => {
       const res = await apiFetch(`/v1/admin/motoboys/${id}`, {
         method: 'PUT',
         body: JSON.stringify(body),
@@ -121,7 +138,9 @@ export function MotoboysManager() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      const res = await apiFetch(`/v1/admin/motoboys/${id}`, { method: 'DELETE' });
+      const res = await apiFetch(`/v1/admin/motoboys/${id}`, {
+        method: 'DELETE',
+      });
       if (!res.ok) throw await res.json();
     },
     onSuccess: () => {
@@ -131,7 +150,9 @@ export function MotoboysManager() {
   });
 
   const isProcessing =
-    createMutation.isPending || updateMutation.isPending || deleteMutation.isPending;
+    createMutation.isPending ||
+    updateMutation.isPending ||
+    deleteMutation.isPending;
 
   /* ── Helpers (stable references via useCallback) ── */
 
@@ -214,6 +235,7 @@ export function MotoboysManager() {
         </h3>
         {!showForm && (
           <button
+            type="button"
             onClick={handleShowForm}
             className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-primary/20 transition-all hover:brightness-110 sm:w-auto"
           >
@@ -248,7 +270,10 @@ export function MotoboysManager() {
           </h4>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <div>
-              <label className="mb-1 block text-sm font-semibold text-slate-600 dark:text-slate-400" htmlFor="mb-ident">
+              <label
+                className="mb-1 block text-sm font-semibold text-slate-600 dark:text-slate-400"
+                htmlFor="mb-ident"
+              >
                 E-mail ou telefone
               </label>
               <input
@@ -261,7 +286,10 @@ export function MotoboysManager() {
               />
             </div>
             <div>
-              <label className="mb-1 block text-sm font-semibold text-slate-600 dark:text-slate-400" htmlFor="mb-phone">
+              <label
+                className="mb-1 block text-sm font-semibold text-slate-600 dark:text-slate-400"
+                htmlFor="mb-phone"
+              >
                 Telefone
               </label>
               <input
@@ -273,7 +301,10 @@ export function MotoboysManager() {
               />
             </div>
             <div>
-              <label className="mb-1 block text-sm font-semibold text-slate-600 dark:text-slate-400" htmlFor="mb-pass">
+              <label
+                className="mb-1 block text-sm font-semibold text-slate-600 dark:text-slate-400"
+                htmlFor="mb-pass"
+              >
                 Senha {editingId && '(deixe vazio para manter)'}
               </label>
               <input
@@ -297,7 +328,10 @@ export function MotoboysManager() {
               {isProcessing ? (
                 <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
               ) : (
-                <MaterialIcon name={editingId ? 'save' : 'person_add'} className="text-lg" />
+                <MaterialIcon
+                  name={editingId ? 'save' : 'person_add'}
+                  className="text-lg"
+                />
               )}
               {editingId ? 'Salvar' : 'Criar'}
             </button>
@@ -319,9 +353,14 @@ export function MotoboysManager() {
         </div>
       ) : motoboys.length === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-2xl border border-primary/5 bg-white p-8 dark:bg-slate-900/40 sm:p-12">
-          <MaterialIcon name="person_off" className="mb-3 text-4xl text-slate-300" />
+          <MaterialIcon
+            name="person_off"
+            className="mb-3 text-4xl text-slate-300"
+          />
           <p className="font-bold text-slate-400">Nenhum motoboy cadastrado</p>
-          <p className="text-sm text-slate-400">Clique em "Adicionar Motoboy" para comecar</p>
+          <p className="text-sm text-slate-400">
+            Clique em "Adicionar Motoboy" para comecar
+          </p>
         </div>
       ) : (
         <div className="space-y-3">

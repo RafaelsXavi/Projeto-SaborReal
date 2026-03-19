@@ -12,10 +12,10 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
-      - fromDatabase:
+      - key: DATABASE_URL
+        fromDatabase:
           name: saborreal-postgres
           property: connectionString
-        sync: false  # Set manually as DATABASE_URL
       - key: JWT_SECRET
         generateValue: true  # Or paste the generated one
       - key: CORS_ORIGINS

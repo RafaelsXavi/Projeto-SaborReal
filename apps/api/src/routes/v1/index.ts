@@ -2,8 +2,8 @@ import { Router } from 'express';
 import { authRouter } from '../../modules/auth/auth.routes.js';
 import { adminRouter } from './admin/index.js';
 import { catalogRouter } from './catalog.js';
-import { motoboyRouter } from './motoboy/index.js';
 import { meRouter } from './me/index.js';
+import { motoboyRouter } from './motoboy/index.js';
 import { ordersRouter } from './orders.js';
 
 export const v1Router = Router();

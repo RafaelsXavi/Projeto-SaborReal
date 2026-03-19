@@ -19,7 +19,8 @@ const updateMotoboySchema = z.object({
 
 function parseIdentifier(raw: string) {
   const v = raw.trim();
-  if (v.includes('@')) return { email: v.toLowerCase(), phone: null as string | null };
+  if (v.includes('@'))
+    return { email: v.toLowerCase(), phone: null as string | null };
   return { email: null as string | null, phone: v };
 }
 
@@ -60,13 +61,23 @@ export const createMotoboy: RequestHandler = async (req, res, next) => {
 
     res.status(201).json({
       ok: true,
-      motoboy: { id: user.id, email: user.email, phone: user.phone, role: user.role },
+      motoboy: {
+        id: user.id,
+        email: user.email,
+        phone: user.phone,
+        role: user.role,
+      },
     });
   } catch (err) {
     if (err instanceof Error && err.message === 'DATABASE_NOT_CONFIGURED') {
       return next(new AppError('DATABASE_NOT_CONFIGURED', 503));
     }
-    if (typeof err === 'object' && err && 'code' in err && err.code === '23505') {
+    if (
+      typeof err === 'object' &&
+      err &&
+      'code' in err &&
+      err.code === '23505'
+    ) {
       return next(new AppError('USER_ALREADY_EXISTS', 409));
     }
     next(err);
@@ -99,13 +110,23 @@ export const updateMotoboy: RequestHandler = async (req, res, next) => {
 
     res.json({
       ok: true,
-      motoboy: { id: updated.id, email: updated.email, phone: updated.phone, role: updated.role },
+      motoboy: {
+        id: updated.id,
+        email: updated.email,
+        phone: updated.phone,
+        role: updated.role,
+      },
     });
   } catch (err) {
     if (err instanceof Error && err.message === 'DATABASE_NOT_CONFIGURED') {
       return next(new AppError('DATABASE_NOT_CONFIGURED', 503));
     }
-    if (typeof err === 'object' && err && 'code' in err && err.code === '23505') {
+    if (
+      typeof err === 'object' &&
+      err &&
+      'code' in err &&
+      err.code === '23505'
+    ) {
       return next(new AppError('USER_ALREADY_EXISTS', 409));
     }
     next(err);

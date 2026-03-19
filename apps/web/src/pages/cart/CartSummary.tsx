@@ -54,6 +54,7 @@ export function CartSummary({
       </div>
 
       <button
+        type="button"
         onClick={onCheckout}
         disabled={disabled || isProcessing}
         className="w-full py-5 bg-primary text-white font-black text-sm uppercase tracking-[0.2em] rounded-3xl shadow-2xl shadow-primary/40 hover:brightness-110 active:scale-95 transition-all flex items-center justify-center gap-3 disabled:opacity-50 disabled:shadow-none disabled:active:scale-100"

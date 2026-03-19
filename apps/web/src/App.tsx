@@ -74,6 +74,7 @@ class ErrorBoundary extends React.Component<
               viewBox="0 0 24 24"
               stroke="currentColor"
             >
+              <title>Erro</title>
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -89,6 +90,7 @@ class ErrorBoundary extends React.Component<
             Tente recarregar a pagina ou entrar em contato conosco.
           </p>
           <button
+            type="button"
             onClick={() => window.location.reload()}
             className="rounded-xl bg-primary px-8 py-3 font-bold text-white shadow-lg transition-all hover:bg-primary/90"
           >

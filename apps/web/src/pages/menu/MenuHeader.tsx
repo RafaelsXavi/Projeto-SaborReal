@@ -30,6 +30,7 @@ export function MenuHeader({
           </div>
         </div>
         <button
+          type="button"
           onClick={onCartClick}
           className="relative flex size-12 shrink-0 items-center justify-center rounded-2xl border border-slate-100 bg-white text-slate-600 shadow-lg shadow-slate-200/50 transition-all hover:scale-105 active:scale-95 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:shadow-none"
           aria-label="Abrir carrinho"

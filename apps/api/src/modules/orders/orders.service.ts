@@ -78,10 +78,20 @@ function resolveRepo(): OrdersRepo {
 
     return {
       placeOrder: async (input) =>
-        wrap(() => pg.placeOrder(input), () => fallback.placeOrder(input))(),
+        wrap(
+          () => pg.placeOrder(input),
+          () => fallback.placeOrder(input),
+        )(),
       listByUser: async (userId) =>
-        wrap(() => pg.listByUser(userId), () => fallback.listByUser(userId))(),
-      listAll: async () => wrap(() => pg.listAll(), () => fallback.listAll())(),
+        wrap(
+          () => pg.listByUser(userId),
+          () => fallback.listByUser(userId),
+        )(),
+      listAll: async () =>
+        wrap(
+          () => pg.listAll(),
+          () => fallback.listAll(),
+        )(),
       listAvailableForMotoboy: async () =>
         wrap(
           () => pg.listAvailableForMotoboy(),
@@ -93,14 +103,20 @@ function resolveRepo(): OrdersRepo {
           () => fallback.listByMotoboy(motoboyId),
         )(),
       acceptOrder: async (input) =>
-        wrap(() => pg.acceptOrder(input), () => fallback.acceptOrder(input))(),
+        wrap(
+          () => pg.acceptOrder(input),
+          () => fallback.acceptOrder(input),
+        )(),
       updateStatus: async (input) =>
         wrap(
           () => pg.updateStatus(input),
           () => fallback.updateStatus(input),
         )(),
       cancelOrder: async (input) =>
-        wrap(() => pg.cancelOrder(input), () => fallback.cancelOrder(input))(),
+        wrap(
+          () => pg.cancelOrder(input),
+          () => fallback.cancelOrder(input),
+        )(),
       completeByMotoboy: async (input) =>
         wrap(
           () => pg.completeByMotoboy(input),
@@ -201,7 +217,9 @@ export async function listAvailableOrdersEnriched(): Promise<EnrichedOrder[]> {
   }));
 }
 
-export async function listOrdersForMotoboyEnriched(motoboyId: string): Promise<EnrichedOrder[]> {
+export async function listOrdersForMotoboyEnriched(
+  motoboyId: string,
+): Promise<EnrichedOrder[]> {
   const pool = getPgPool();
   if (pool) {
     const pgRepo = new PgOrdersRepo(pool);

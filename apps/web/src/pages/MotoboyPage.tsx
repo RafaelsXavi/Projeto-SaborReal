@@ -1,4 +1,5 @@
 import { useCallback } from 'react';
+import { userFriendlyError } from '../api';
 import { MaterialIcon } from '../components/MaterialIcon';
 import { useMotoboyOrders } from '../hooks/useMotoboyOrders';
 import { MotoboyHeader } from './motoboy/MotoboyHeader';
@@ -6,10 +7,19 @@ import {
   AssignedOrdersList,
   AvailableOrdersList,
 } from './motoboy/MotoboyLists';
+import { OrderListSkeleton } from './motoboy/OrderCardSkeleton';
 
 export function MotoboyPage() {
-  const { available, assigned, loading, accept, complete, isProcessing } =
-    useMotoboyOrders();
+  const {
+    available,
+    assigned,
+    loading,
+    refresh,
+    accept,
+    complete,
+    isProcessing,
+    error,
+  } = useMotoboyOrders();
 
   const handleAccept = useCallback(
     async (id: string) => {
@@ -49,18 +59,26 @@ export function MotoboyPage() {
                 </span>
               </h3>
               <button
+                type="button"
                 className="text-[10px] font-bold uppercase tracking-widest text-primary hover:underline sm:text-xs"
-                onClick={() => window.location.reload()}
+                onClick={() => refresh()}
+                disabled={loading}
               >
-                Atualizar
+                {loading ? 'Atualizando...' : 'Atualizar'}
               </button>
             </div>
 
-            {loading && available.length === 0 ? (
-              <div className="flex flex-col items-center justify-center rounded-2xl border border-primary/5 bg-white p-12 dark:bg-background-dark/40 sm:p-20">
-                <div className="mb-4 h-8 w-8 animate-spin rounded-full border-4 border-primary/20 border-t-primary sm:h-10 sm:w-10" />
-                <p className="text-sm font-bold text-slate-400 sm:text-base">Buscando pedidos...</p>
+            {error && (
+              <div className="mb-4 rounded-xl border border-rose-100 bg-rose-50 p-4 text-xs font-bold text-rose-600 dark:border-rose-900/30 dark:bg-rose-900/20">
+                <div className="flex items-center gap-2">
+                  <MaterialIcon name="error_outline" className="text-base" />
+                  <p>{userFriendlyError(error)}</p>
+                </div>
               </div>
+            )}
+
+            {loading && available.length === 0 ? (
+              <OrderListSkeleton />
             ) : (
               <AvailableOrdersList
                 orders={available}
@@ -89,11 +107,15 @@ export function MotoboyPage() {
               )}
             </div>
 
-            <AssignedOrdersList
-              orders={assigned}
-              onAction={handleComplete}
-              isProcessing={isProcessing}
-            />
+            {loading && assigned.length === 0 ? (
+              <OrderListSkeleton />
+            ) : (
+              <AssignedOrdersList
+                orders={assigned}
+                onAction={handleComplete}
+                isProcessing={isProcessing}
+              />
+            )}
           </section>
         </div>
       </main>

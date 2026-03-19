@@ -110,7 +110,9 @@ export function OrdersPage() {
       <main className="mx-auto w-full max-w-5xl px-4 py-6 pb-28 sm:px-6">
         {!user ? (
           <div className="rounded-xl border border-primary/5 bg-white p-6 dark:bg-slate-800/50">
-            <h2 className="text-xl font-extrabold">Entre para ver seus pedidos</h2>
+            <h2 className="text-xl font-extrabold">
+              Entre para ver seus pedidos
+            </h2>
             <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
               Voce precisa estar autenticado para acompanhar o status e cancelar
               pedidos.

@@ -59,6 +59,7 @@ export function CartPage() {
           Seu pedido foi recebido e ja esta sendo preparado com todo carinho.
         </p>
         <button
+          type="button"
           onClick={() => navigate('orders')}
           className="w-full max-w-xs rounded-3xl bg-slate-900 py-5 text-sm font-black uppercase tracking-widest text-white shadow-xl transition-all hover:scale-105 active:scale-95 dark:bg-slate-100 dark:text-slate-900"
         >
@@ -92,6 +93,7 @@ export function CartPage() {
               Que tal escolher uma delicia do cardapio?
             </p>
             <button
+              type="button"
               onClick={() => navigate('menu')}
               className="rounded-2xl bg-primary px-10 py-4 text-xs font-black uppercase tracking-[0.2em] text-white shadow-lg shadow-primary/20 transition-all hover:brightness-110 active:scale-95"
             >
@@ -140,7 +142,9 @@ export function CartPage() {
                     <div className="flex h-64 w-full items-center justify-center rounded-3xl border border-slate-200 bg-white/50 text-slate-500 dark:border-slate-800 dark:bg-slate-900/30 dark:text-slate-300 sm:h-72">
                       <div className="flex items-center gap-3">
                         <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary/30 border-t-primary" />
-                        <span className="text-sm font-bold">Carregando mapa...</span>
+                        <span className="text-sm font-bold">
+                          Carregando mapa...
+                        </span>
                       </div>
                     </div>
                   }

@@ -2,8 +2,8 @@ import type { RequestHandler } from 'express';
 import { getPgPool } from '../../db/postgres.js';
 import { AppError } from '../../middleware/error.js';
 import { PgJobsRepo } from '../jobs/jobs.repo.js';
-import { placeOrder } from './orders.service.js';
 import { placeOrderSchema } from './orders.schemas.js';
+import { placeOrder } from './orders.service.js';
 
 function getIdempotencyKey(req: Parameters<RequestHandler>[0]) {
   const raw = req.header('idempotency-key')?.trim();
@@ -47,8 +47,8 @@ export const placeOrderHandler: RequestHandler = async (req, res, next) => {
         const jobs = new PgJobsRepo(pool);
         void jobs
           .enqueue({
-          name: 'orders.after_place',
-          payload: { orderId: result.order.id, userId: req.auth.userId },
+            name: 'orders.after_place',
+            payload: { orderId: result.order.id, userId: req.auth.userId },
           })
           .catch(() => undefined);
       }

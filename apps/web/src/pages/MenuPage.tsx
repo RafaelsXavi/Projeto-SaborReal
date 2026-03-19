@@ -3,7 +3,11 @@ import { MaterialIcon } from '../components/MaterialIcon';
 import { Navigation } from '../components/Navigation';
 import { Skeleton } from '../components/Skeleton';
 import { useCart } from '../hooks/useCart';
-import { useCatalog, type CatalogCategory, type CatalogItem } from '../hooks/useCatalog';
+import {
+  type CatalogCategory,
+  type CatalogItem,
+  useCatalog,
+} from '../hooks/useCatalog';
 import { navigate } from '../router';
 import { CategoryFilter } from './menu/CategoryFilter';
 import { MenuHeader } from './menu/MenuHeader';
@@ -19,7 +23,9 @@ export function MenuPage() {
   const filteredCatalog = useMemo(() => {
     let list = catalog;
     if (selectedCategory !== 'all') {
-      list = list.filter((it: CatalogItem) => it.categoryId === selectedCategory);
+      list = list.filter(
+        (it: CatalogItem) => it.categoryId === selectedCategory,
+      );
     }
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
@@ -75,7 +81,9 @@ export function MenuPage() {
             <span className="text-sm font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">
               {selectedCategory === 'all'
                 ? 'Ver tudo'
-                : categories.find((c: CatalogCategory) => c.id === selectedCategory)?.name}
+                : categories.find(
+                    (c: CatalogCategory) => c.id === selectedCategory,
+                  )?.name}
             </span>
           </h3>
 

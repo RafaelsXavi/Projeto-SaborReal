@@ -61,13 +61,18 @@ export const OrderCard = memo(function OrderCard({
               </h4>
             </div>
           </div>
-          <p className="shrink-0 text-[10px] text-slate-400 sm:text-xs">{timeLabel}</p>
+          <p className="shrink-0 text-[10px] text-slate-400 sm:text-xs">
+            {timeLabel}
+          </p>
         </div>
 
         {/* Items list */}
         <div className="mb-3 rounded-lg border border-slate-100 bg-slate-50/50 p-2.5 dark:border-slate-800 dark:bg-slate-900/30 sm:mb-4 sm:rounded-xl sm:p-3">
           <p className="mb-1.5 flex items-center gap-1 text-[10px] font-black uppercase tracking-widest text-slate-400 sm:mb-2 sm:gap-1.5">
-            <MaterialIcon name="inventory_2" className="text-xs text-primary sm:text-sm" />
+            <MaterialIcon
+              name="inventory_2"
+              className="text-xs text-primary sm:text-sm"
+            />
             Itens do pedido
           </p>
           <ul className="space-y-1 sm:space-y-1.5">
@@ -100,12 +105,18 @@ export const OrderCard = memo(function OrderCard({
 
         {/* Address placeholder */}
         <div className="mb-3 flex items-center gap-2.5 text-slate-600 dark:text-slate-400 sm:mb-4 sm:gap-3">
-          <MaterialIcon name="location_on" className="text-base text-primary sm:text-lg" />
-          <p className="text-xs font-medium sm:text-sm">Endereco de entrega simulado</p>
+          <MaterialIcon
+            name="location_on"
+            className="text-base text-primary sm:text-lg"
+          />
+          <p className="text-xs font-medium sm:text-sm">
+            Endereco de entrega simulado
+          </p>
         </div>
 
         {/* Action button */}
         <button
+          type="button"
           onClick={() => onAction(order.id)}
           disabled={isProcessing}
           className={`flex w-full items-center justify-center gap-2 rounded-lg py-3 text-xs font-black uppercase tracking-wider text-white shadow-lg transition-all disabled:opacity-60 disabled:shadow-none sm:rounded-xl sm:py-4 sm:text-sm ${

@@ -1,6 +1,6 @@
 import 'dotenv/config';
-import { Pool } from 'pg';
 import type { Role } from '@saborreal/shared';
+import { Pool } from 'pg';
 
 import { env } from '../config/env.js';
 import { hashPassword } from '../modules/auth/password.js';
@@ -21,11 +21,14 @@ function mustGet(name: string) {
   return v.trim();
 }
 
-async function ensureUser(users: PgUsersRepo, input: {
-  identifier: string;
-  password: string;
-  role: Role;
-}) {
+async function ensureUser(
+  users: PgUsersRepo,
+  input: {
+    identifier: string;
+    password: string;
+    role: Role;
+  },
+) {
   if (input.password.length < 8) {
     throw new Error(`Password too short for role=${input.role} (min 8 chars)`);
   }

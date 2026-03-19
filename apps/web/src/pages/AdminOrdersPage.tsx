@@ -1,8 +1,8 @@
-import { useMemo, useState, useCallback } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import {
-  useAdminOrders,
   type ApiOrder,
   type OrderStatus,
+  useAdminOrders,
 } from '../hooks/useAdminOrders';
 import { useCatalog } from '../hooks/useCatalog';
 import { MotoboysManager } from './admin/MotoboysManager';
@@ -57,7 +57,7 @@ export function AdminOrdersPage() {
         (o: ApiOrder) =>
           o.id.toLowerCase().includes(q) ||
           o.userId.toLowerCase().includes(q) ||
-          (o.motoboyId && o.motoboyId.toLowerCase().includes(q)),
+          Boolean(o.motoboyId?.toLowerCase().includes(q)),
       );
     }
     return list
@@ -86,7 +86,10 @@ export function AdminOrdersPage() {
 
   const handleSetFilter = useCallback((f: FilterType) => setFilter(f), []);
   const handleSetQuery = useCallback((q: string) => setQuery(q), []);
-  const handleSetSelectedId = useCallback((id: string) => setSelectedId(id), []);
+  const handleSetSelectedId = useCallback(
+    (id: string) => setSelectedId(id),
+    [],
+  );
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-background-dark text-slate-900 dark:text-slate-100 font-sans selection:bg-primary/30">
@@ -96,6 +99,7 @@ export function AdminOrdersPage() {
         {/* Tab Navigation */}
         <div className="mb-6 flex gap-1 rounded-xl bg-slate-100 p-1 dark:bg-slate-800/50">
           <button
+            type="button"
             onClick={() => setActiveTab('orders')}
             className={`flex-1 rounded-lg px-4 py-2.5 text-sm font-bold transition-all ${
               activeTab === 'orders'
@@ -106,6 +110,7 @@ export function AdminOrdersPage() {
             Pedidos
           </button>
           <button
+            type="button"
             onClick={() => setActiveTab('motoboys')}
             className={`flex-1 rounded-lg px-4 py-2.5 text-sm font-bold transition-all ${
               activeTab === 'motoboys'

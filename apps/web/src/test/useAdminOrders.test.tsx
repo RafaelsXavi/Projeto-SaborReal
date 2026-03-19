@@ -1,14 +1,16 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { renderHook, waitFor } from '@testing-library/react';
-import { useAdminOrders } from '../hooks/useAdminOrders';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { renderHook, waitFor } from '@testing-library/react';
+import type React from 'react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import * as api from '../api';
-import React from 'react';
+import { useAdminOrders } from '../hooks/useAdminOrders';
 
 vi.mock('../api', () => ({
   apiFetch: vi.fn(),
   userFriendlyError: vi.fn((e) => e.message || 'Error'),
 }));
+
+const apiFetchMock = api.apiFetch as unknown as ReturnType<typeof vi.fn>;
 
 const createWrapper = () => {
   const queryClient = new QueryClient({
@@ -25,22 +27,30 @@ describe('useAdminOrders', () => {
   });
 
   it('should fetch orders on mount', async () => {
-    const mockOrders = [{ id: 'order-1', status: 'pending' }];
-    (api.apiFetch as any).mockResolvedValue({
+    const mockOrders = [
+      {
+        id: 'order-1',
+        userId: 'user-1',
+        status: 'PLACED',
+        lines: [],
+        createdAt: new Date().toISOString(),
+      },
+    ];
+    apiFetchMock.mockResolvedValue({
       ok: true,
-      json: async () => mockOrders,
+      json: async () => ({ ok: true, orders: mockOrders }),
     });
 
     const { result } = renderHook(() => useAdminOrders(), {
       wrapper: createWrapper(),
     });
 
-    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    await waitFor(() => expect(result.current.loading).toBe(false));
     expect(result.current.orders).toEqual(mockOrders);
   });
 
   it('should update order status via mutation', async () => {
-    (api.apiFetch as any).mockResolvedValue({
+    apiFetchMock.mockResolvedValue({
       ok: true,
       json: async () => [],
     });
@@ -49,16 +59,16 @@ describe('useAdminOrders', () => {
       wrapper: createWrapper(),
     });
 
-    await result.current.updateStatus.mutateAsync({
+    await result.current.updateStatus({
       orderId: 'order-1',
-      status: 'preparing',
+      status: 'PREPARING',
     });
 
     expect(api.apiFetch).toHaveBeenCalledWith(
-      '/v1/orders/order-1/status',
+      '/v1/admin/orders/order-1/status',
       expect.objectContaining({
         method: 'PATCH',
-        body: JSON.stringify({ status: 'preparing' }),
+        body: JSON.stringify({ status: 'PREPARING' }),
       }),
     );
   });

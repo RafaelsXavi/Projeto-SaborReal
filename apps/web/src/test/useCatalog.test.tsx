@@ -1,15 +1,17 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { renderHook, waitFor } from '@testing-library/react';
-import { useCatalog } from '../hooks/useCatalog';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { renderHook, waitFor } from '@testing-library/react';
+import type React from 'react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import * as api from '../api';
-import React from 'react';
+import { useCatalog } from '../hooks/useCatalog';
 
 // Mock the API module
 vi.mock('../api', () => ({
   apiFetch: vi.fn(),
   userFriendlyError: vi.fn((e) => e.message || 'Error'),
 }));
+
+const apiFetchMock = api.apiFetch as unknown as ReturnType<typeof vi.fn>;
 
 const createWrapper = () => {
   const queryClient = new QueryClient({
@@ -31,11 +33,20 @@ describe('useCatalog', () => {
 
   it('should return catalog data on success', async () => {
     const mockData = {
-      items: [{ id: '1', name: 'Product 1' }],
+      items: [
+        {
+          id: '1',
+          name: 'Product 1',
+          priceCents: 1000,
+          categoryId: 'cat1',
+          categoryName: 'Cat 1',
+          available: true,
+        },
+      ],
       categories: [{ id: 'cat1', name: 'Cat 1' }],
     };
 
-    (api.apiFetch as any).mockResolvedValue({
+    apiFetchMock.mockResolvedValue({
       ok: true,
       json: async () => mockData,
     });
@@ -44,15 +55,13 @@ describe('useCatalog', () => {
       wrapper: createWrapper(),
     });
 
-    await waitFor(() => expect(result.current.loading).toBe(false));
-
-    expect(result.current.catalog).toEqual(mockData.items);
+    await waitFor(() => expect(result.current.catalog).toEqual(mockData.items));
     expect(result.current.categories).toEqual(mockData.categories);
     expect(result.current.error).toBeNull();
   });
 
   it('should return seed data on API failure in DEV mode', async () => {
-    (api.apiFetch as any).mockRejectedValue(new Error('Network Error'));
+    apiFetchMock.mockRejectedValue(new Error('Network Error'));
 
     const { result } = renderHook(() => useCatalog(), {
       wrapper: createWrapper(),
@@ -65,6 +74,6 @@ describe('useCatalog', () => {
     expect(result.current.catalog[0].id).toBe(
       'tapioca-salgada-frango-com-requeijao',
     );
-    expect(result.current.error).toBeNull(); // Error is suppressed in DEV for fallback
+    await waitFor(() => expect(result.current.error).toBeTruthy());
   });
 });

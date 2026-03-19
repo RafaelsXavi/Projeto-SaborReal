@@ -111,9 +111,7 @@ export function OrderList({
               </p>
               <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
                 Itens: {o.lines.reduce((s, l) => s + l.qty, 0)}
-                {o.motoboyId
-                  ? ` - Entregador: ${o.motoboyId.slice(0, 8)}`
-                  : ''}
+                {o.motoboyId ? ` - Entregador: ${o.motoboyId.slice(0, 8)}` : ''}
               </p>
             </div>
             <div className="flex shrink-0 flex-row items-center justify-between gap-2 sm:flex-col sm:items-end">

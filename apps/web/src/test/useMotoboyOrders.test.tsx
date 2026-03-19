@@ -1,14 +1,16 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { renderHook, waitFor } from '@testing-library/react';
-import { useMotoboyOrders } from '../hooks/useMotoboyOrders';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { renderHook, waitFor } from '@testing-library/react';
+import type React from 'react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import * as api from '../api';
-import React from 'react';
+import { useMotoboyOrders } from '../hooks/useMotoboyOrders';
 
 vi.mock('../api', () => ({
   apiFetch: vi.fn(),
   userFriendlyError: vi.fn((e) => e.message || 'Error'),
 }));
+
+const apiFetchMock = api.apiFetch as unknown as ReturnType<typeof vi.fn>;
 
 const createWrapper = () => {
   const queryClient = new QueryClient({
@@ -25,17 +27,27 @@ describe('useMotoboyOrders', () => {
   });
 
   it('should fetch available and assigned orders', async () => {
-    (api.apiFetch as any).mockImplementation((url: string) => {
+    apiFetchMock.mockImplementation((url: string) => {
       if (url.includes('available')) {
         return Promise.resolve({
           ok: true,
-          json: async () => [{ id: 'avail-1' }],
+          json: async () => ({
+            ok: true,
+            orders: [
+              { id: 'avail-1', lines: [], createdAt: new Date().toISOString() },
+            ],
+          }),
         });
       }
       if (url.includes('assigned')) {
         return Promise.resolve({
           ok: true,
-          json: async () => [{ id: 'ass-1' }],
+          json: async () => ({
+            ok: true,
+            orders: [
+              { id: 'ass-1', lines: [], createdAt: new Date().toISOString() },
+            ],
+          }),
         });
       }
       return Promise.reject(new Error('Unexpected URL'));
@@ -46,25 +58,43 @@ describe('useMotoboyOrders', () => {
     });
 
     await waitFor(() => {
-      expect(result.current.availableOrders).toHaveLength(1);
-      expect(result.current.assignedOrders).toHaveLength(1);
+      expect(result.current.available).toHaveLength(1);
+      expect(result.current.assigned).toHaveLength(1);
     });
   });
 
   it('should accept an order', async () => {
-    (api.apiFetch as any).mockResolvedValue({
+    apiFetchMock.mockResolvedValue({
       ok: true,
-      json: async () => ({}),
+      json: async () => ({ ok: true }),
     });
 
     const { result } = renderHook(() => useMotoboyOrders(), {
       wrapper: createWrapper(),
     });
 
-    await result.current.acceptOrder.mutateAsync('order-123');
+    await result.current.accept('order-123');
 
     expect(api.apiFetch).toHaveBeenCalledWith(
-      '/v1/orders/order-123/accept',
+      '/v1/motoboy/orders/order-123/accept',
+      expect.objectContaining({ method: 'POST' }),
+    );
+  });
+
+  it('should complete an order', async () => {
+    apiFetchMock.mockResolvedValue({
+      ok: true,
+      json: async () => ({ ok: true }),
+    });
+
+    const { result } = renderHook(() => useMotoboyOrders(), {
+      wrapper: createWrapper(),
+    });
+
+    await result.current.complete('order-123');
+
+    expect(api.apiFetch).toHaveBeenCalledWith(
+      '/v1/motoboy/orders/order-123/complete',
       expect.objectContaining({ method: 'POST' }),
     );
   });

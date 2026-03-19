@@ -22,6 +22,7 @@ export function Navigation() {
       <div className="mx-auto grid max-w-6xl grid-cols-4 px-3 py-2 sm:px-4">
         {navItems.map((item) => (
           <button
+            type="button"
             key={item.id}
             onClick={() => navigate(item.path)}
             className={`flex min-w-0 flex-col items-center gap-1 py-1 transition-all ${
