@@ -1,6 +1,6 @@
 import { createHash, randomUUID } from 'node:crypto';
 import type { Pool } from 'pg';
-import type { Order, OrderLine } from './orders.types.js';
+import type { EnrichedOrder, EnrichedOrderLine, Order, OrderLine } from './orders.types.js';
 
 function stableStringify(value: unknown): string {
   if (value === null) return 'null';
@@ -26,7 +26,9 @@ type OrderRow = {
   user_id: string;
   status: Order['status'];
   created_at: string;
-  courier_id: string | null;
+  motoboy_id: string | null;
+  distance_km: number | null;
+  delivery_fee: number | null;
 };
 
 type LineRow = {
@@ -43,9 +45,11 @@ function toOrder(row: OrderRow, lines: OrderLine[]): Order {
     status: row.status,
     createdAt: row.created_at,
     lines,
+    distanceKm: row.distance_km ?? undefined,
+    deliveryFee: row.delivery_fee ?? undefined,
   };
-  if (row.courier_id) {
-    return { ...base, courierId: row.courier_id };
+  if (row.motoboy_id) {
+    return { ...base, motoboyId: row.motoboy_id };
   }
   return base;
 }
@@ -60,10 +64,10 @@ const FLOW_RANK: Record<Exclude<Order['status'], 'CANCELLED'>, number> = {
 
 function validateStatusUpdate(input: {
   currentStatus: Order['status'];
-  courierId: string | null;
+  motoboyId: string | null;
   nextStatus: Order['status'];
 }) {
-  const { currentStatus, nextStatus, courierId } = input;
+  const { currentStatus, nextStatus, motoboyId } = input;
 
   if (nextStatus === currentStatus) return;
 
@@ -74,10 +78,10 @@ function validateStatusUpdate(input: {
   if (nextStatus === 'CANCELLED') return;
 
   if (nextStatus === 'OUT_FOR_DELIVERY' || nextStatus === 'COMPLETED') {
-    if (!courierId) throw new Error('ORDER_COURIER_REQUIRED');
+    if (!motoboyId) throw new Error('ORDER_MOTOBOY_REQUIRED');
   }
 
-  if (courierId) {
+  if (motoboyId) {
     const nextRank = FLOW_RANK[nextStatus];
     if (nextRank < FLOW_RANK.OUT_FOR_DELIVERY) {
       throw new Error('ORDER_INVALID_STATUS_TRANSITION');
@@ -99,6 +103,7 @@ export class PgOrdersRepo {
     lines: OrderLine[];
     idempotencyKey: string;
     body: unknown;
+    distanceKm?: number | undefined;
   }): Promise<{ order: Order; replay: boolean }> {
     const orderId = randomUUID();
     const bodyHash = hashBody(input.body);
@@ -130,10 +135,13 @@ export class PgOrdersRepo {
         return { order, replay: true };
       }
 
+      const distanceKm = input.distanceKm ?? 0;
+      const deliveryFee = Number((distanceKm * 1.4).toFixed(2));
+
       await client.query(
-        `insert into orders (id, user_id, status)
-         values ($1, $2, 'PLACED')`,
-        [orderId, input.userId],
+        `insert into orders (id, user_id, status, distance_km, delivery_fee)
+         values ($1, $2, 'PLACED', $3, $4)`,
+        [orderId, input.userId, distanceKm, deliveryFee],
       );
 
       for (const [idx, l] of input.lines.entries()) {
@@ -171,7 +179,7 @@ export class PgOrdersRepo {
 
   async getById(orderId: string): Promise<Order | null> {
     const oRes = await this.pool.query<OrderRow>(
-      `select id, user_id, status, created_at, courier_id
+      `select id, user_id, status, created_at, motoboy_id, distance_km, delivery_fee
        from orders
        where id = $1
        limit 1`,
@@ -196,7 +204,7 @@ export class PgOrdersRepo {
 
   async listAll(): Promise<Order[]> {
     const oRes = await this.pool.query<OrderRow>(
-      `select id, user_id, status, created_at, courier_id
+      `select id, user_id, status, created_at, motoboy_id, distance_km, delivery_fee
        from orders
        order by created_at asc`,
     );
@@ -205,7 +213,7 @@ export class PgOrdersRepo {
 
   async listByUser(userId: string): Promise<Order[]> {
     const oRes = await this.pool.query<OrderRow>(
-      `select id, user_id, status, created_at, courier_id
+      `select id, user_id, status, created_at, motoboy_id, distance_km, delivery_fee
        from orders
        where user_id = $1
        order by created_at asc`,
@@ -214,22 +222,22 @@ export class PgOrdersRepo {
     return this.attachLines(oRes.rows);
   }
 
-  async listByCourier(courierId: string): Promise<Order[]> {
+  async listByMotoboy(motoboyId: string): Promise<Order[]> {
     const oRes = await this.pool.query<OrderRow>(
-      `select id, user_id, status, created_at, courier_id
+      `select id, user_id, status, created_at, motoboy_id, distance_km, delivery_fee
        from orders
-       where courier_id = $1
+       where motoboy_id = $1
        order by created_at asc`,
-      [courierId],
+      [motoboyId],
     );
     return this.attachLines(oRes.rows);
   }
 
-  async listAvailableForCourier(): Promise<Order[]> {
+  async listAvailableForMotoboy(): Promise<Order[]> {
     const oRes = await this.pool.query<OrderRow>(
-      `select id, user_id, status, created_at, courier_id
+      `select id, user_id, status, created_at, motoboy_id, distance_km, delivery_fee
        from orders
-       where courier_id is null and status = 'READY_FOR_PICKUP'
+       where motoboy_id is null and status = 'READY_FOR_PICKUP'
        order by created_at asc`,
     );
     return this.attachLines(oRes.rows);
@@ -237,20 +245,20 @@ export class PgOrdersRepo {
 
   async acceptOrder(input: {
     orderId: string;
-    courierId: string;
+    motoboyId: string;
   }): Promise<Order> {
     const client = await this.pool.connect();
     try {
       await client.query('begin');
       const res = await client.query<OrderRow>(
         `update orders
-         set courier_id = $2,
+         set motoboy_id = $2,
              status = 'OUT_FOR_DELIVERY'
          where id = $1
-           and courier_id is null
+           and motoboy_id is null
            and status = 'READY_FOR_PICKUP'
-         returning id, user_id, status, created_at, courier_id`,
-        [input.orderId, input.courierId],
+         returning id, user_id, status, created_at, motoboy_id`,
+        [input.orderId, input.motoboyId],
       );
       const row = res.rows[0];
       if (!row) {
@@ -260,14 +268,14 @@ export class PgOrdersRepo {
         );
         if (exists.rowCount === 0) throw new Error('ORDER_NOT_FOUND');
         const current = await client.query<{
-          courier_id: string | null;
+          motoboy_id: string | null;
           status: string;
-        }>(`select courier_id, status from orders where id = $1 limit 1`, [
+        }>(`select motoboy_id, status from orders where id = $1 limit 1`, [
           input.orderId,
         ]);
         const cur = current.rows[0];
         if (cur?.status === 'CANCELLED') throw new Error('ORDER_NOT_AVAILABLE');
-        if (cur?.courier_id) throw new Error('ORDER_ALREADY_ASSIGNED');
+        if (cur?.motoboy_id) throw new Error('ORDER_ALREADY_ASSIGNED');
         if (cur?.status !== 'READY_FOR_PICKUP')
           throw new Error('ORDER_NOT_READY_FOR_PICKUP');
         throw new Error('ORDER_NOT_AVAILABLE');
@@ -292,9 +300,9 @@ export class PgOrdersRepo {
     status: Order['status'];
   }): Promise<Order> {
     const current = await this.pool.query<
-      Pick<OrderRow, 'status' | 'courier_id'>
+      Pick<OrderRow, 'status' | 'motoboy_id'>
     >(
-      `select status, courier_id
+      `select status, motoboy_id
        from orders
        where id = $1
        limit 1`,
@@ -305,7 +313,7 @@ export class PgOrdersRepo {
 
     validateStatusUpdate({
       currentStatus: cur.status,
-      courierId: cur.courier_id,
+      motoboyId: cur.motoboy_id,
       nextStatus: input.status,
     });
 
@@ -319,7 +327,7 @@ export class PgOrdersRepo {
       `update orders
        set status = $2
        where id = $1
-       returning id, user_id, status, created_at, courier_id`,
+       returning id, user_id, status, created_at, motoboy_id`,
       [input.orderId, input.status],
     );
     const row = res.rows[0];
@@ -339,7 +347,7 @@ export class PgOrdersRepo {
        where id = $1
          and user_id = $2
          and status not in ('COMPLETED', 'CANCELLED')
-       returning id, user_id, status, created_at, courier_id`,
+       returning id, user_id, status, created_at, motoboy_id`,
       [input.orderId, input.userId],
     );
     const row = res.rows[0];
@@ -362,32 +370,32 @@ export class PgOrdersRepo {
     return order;
   }
 
-  async completeByCourier(input: {
+  async completeByMotoboy(input: {
     orderId: string;
-    courierId: string;
+    motoboyId: string;
   }): Promise<Order> {
     const res = await this.pool.query<OrderRow>(
       `update orders
        set status = 'COMPLETED'
        where id = $1
-         and courier_id = $2
+         and motoboy_id = $2
          and status = 'OUT_FOR_DELIVERY'
-       returning id, user_id, status, created_at, courier_id`,
-      [input.orderId, input.courierId],
+       returning id, user_id, status, created_at, motoboy_id`,
+      [input.orderId, input.motoboyId],
     );
     const row = res.rows[0];
     if (!row) {
       const exists = await this.pool.query<{
         id: string;
-        courier_id: string | null;
+        motoboy_id: string | null;
         status: Order['status'];
-      }>(`select id, courier_id, status from orders where id = $1 limit 1`, [
+      }>(`select id, motoboy_id, status from orders where id = $1 limit 1`, [
         input.orderId,
       ]);
       if (exists.rowCount === 0) throw new Error('ORDER_NOT_FOUND');
       const cur = exists.rows[0];
-      if (!cur?.courier_id) throw new Error('ORDER_NOT_ASSIGNED');
-      if (cur.courier_id !== input.courierId) throw new Error('FORBIDDEN');
+      if (!cur?.motoboy_id) throw new Error('ORDER_NOT_ASSIGNED');
+      if (cur.motoboy_id !== input.motoboyId) throw new Error('FORBIDDEN');
       throw new Error('ORDER_NOT_COMPLETABLE');
     }
     const order = await this.getById(row.id);
@@ -414,5 +422,73 @@ export class PgOrdersRepo {
     }
 
     return orders.map((o) => toOrder(o, grouped.get(o.id) ?? []));
+  }
+
+  // ── Enriched queries for Motoboy ──────────────────────────────────────
+
+  async listAvailableForMotoboyEnriched(): Promise<EnrichedOrder[]> {
+    const oRes = await this.pool.query<OrderRow>(
+      `select id, user_id, status, created_at, motoboy_id, distance_km, delivery_fee
+       from orders
+       where motoboy_id is null and status = 'READY_FOR_PICKUP'
+       order by created_at asc`,
+    );
+    return this.attachEnrichedLines(oRes.rows);
+  }
+
+  async listByMotoboyEnriched(motoboyId: string): Promise<EnrichedOrder[]> {
+    const oRes = await this.pool.query<OrderRow>(
+      `select id, user_id, status, created_at, motoboy_id, distance_km, delivery_fee
+       from orders
+       where motoboy_id = $1
+       order by created_at asc`,
+      [motoboyId],
+    );
+    return this.attachEnrichedLines(oRes.rows);
+  }
+
+  private async attachEnrichedLines(orders: OrderRow[]): Promise<EnrichedOrder[]> {
+    if (orders.length === 0) return [];
+
+    const orderIds = orders.map((o) => o.id);
+    const userIds = [...new Set(orders.map((o) => o.user_id))];
+
+    // Run both queries in parallel for better latency
+    const [lRes, pRes] = await Promise.all([
+      this.pool.query<LineRow & { item_name: string | null }>(
+        `select ol.order_id, ol.line_no, ol.item_id, ol.qty,
+                coalesce(ci.name, ol.item_id) as item_name
+         from order_lines ol
+         left join catalog_items ci on ci.id = ol.item_id
+         where ol.order_id = any($1::uuid[])
+         order by ol.order_id asc, ol.line_no asc`,
+        [orderIds],
+      ),
+      this.pool.query<{ id: string; phone: string | null }>(
+        `select id, phone from users where id = any($1::uuid[])`,
+        [userIds],
+      ),
+    ]);
+
+    const phoneMap = new Map<string, string | null>();
+    for (const row of pRes.rows) {
+      phoneMap.set(row.id, row.phone);
+    }
+
+    const grouped = new Map<string, EnrichedOrderLine[]>();
+    for (const row of lRes.rows) {
+      const arr = grouped.get(row.order_id) ?? [];
+      arr.push({ id: row.item_id, qty: row.qty, name: row.item_name ?? row.item_id });
+      grouped.set(row.order_id, arr);
+    }
+
+    return orders.map((o) => {
+      const base = toOrder(o, []);
+      return {
+        ...base,
+        lines: grouped.get(o.id) ?? [],
+        customerPhone: phoneMap.get(o.user_id) ?? null,
+      };
+    });
   }
 }

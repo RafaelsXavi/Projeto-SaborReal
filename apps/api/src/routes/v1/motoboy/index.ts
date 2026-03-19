@@ -1,20 +1,20 @@
 import { Router } from 'express';
 import { requireRole } from '../../../middleware/auth.js';
 import { AppError } from '../../../middleware/error.js';
-import { courierCompleteOrder } from '../../../modules/orders/orders.courier.controller.js';
+import { motoboyCompleteOrder } from '../../../modules/orders/orders.motoboy.controller.js';
 import {
   acceptOrder,
-  listAvailableOrders,
-  listOrdersForCourier,
+  listAvailableOrdersEnriched,
+  listOrdersForMotoboyEnriched,
 } from '../../../modules/orders/orders.service.js';
 
-export const courierRouter = Router();
+export const motoboyRouter = Router();
 
-courierRouter.use(requireRole('courier'));
+motoboyRouter.use(requireRole('motoboy'));
 
-courierRouter.get('/orders/available', async (_req, res, next) => {
+motoboyRouter.get('/orders/available', async (_req, res, next) => {
   try {
-    const orders = await listAvailableOrders();
+    const orders = await listAvailableOrdersEnriched();
     res.json({ ok: true, orders });
   } catch (err) {
     if (err instanceof Error && err.message === 'DATABASE_NOT_CONFIGURED') {
@@ -24,10 +24,10 @@ courierRouter.get('/orders/available', async (_req, res, next) => {
   }
 });
 
-courierRouter.get('/orders/mine', async (req, res, next) => {
+motoboyRouter.get('/orders/mine', async (req, res, next) => {
   try {
     if (!req.auth) return next(new AppError('UNAUTHENTICATED', 401));
-    const orders = await listOrdersForCourier(req.auth.userId);
+    const orders = await listOrdersForMotoboyEnriched(req.auth.userId);
     res.json({ ok: true, orders });
   } catch (err) {
     if (err instanceof Error && err.message === 'DATABASE_NOT_CONFIGURED') {
@@ -37,14 +37,14 @@ courierRouter.get('/orders/mine', async (req, res, next) => {
   }
 });
 
-courierRouter.post('/orders/:id/accept', async (req, res, next) => {
+motoboyRouter.post('/orders/:id/accept', async (req, res, next) => {
   try {
     if (!req.auth) return next(new AppError('UNAUTHENTICATED', 401));
     const orderId = req.params.id;
     if (!orderId) return next(new AppError('INVALID_ORDER_ID', 400));
 
     try {
-      const order = await acceptOrder({ orderId, courierId: req.auth.userId });
+      const order = await acceptOrder({ orderId, motoboyId: req.auth.userId });
       res.json({ ok: true, order });
     } catch (err) {
       if (!(err instanceof Error)) throw err;
@@ -70,4 +70,4 @@ courierRouter.post('/orders/:id/accept', async (req, res, next) => {
   }
 });
 
-courierRouter.post('/orders/:id/complete', courierCompleteOrder);
+motoboyRouter.post('/orders/:id/complete', motoboyCompleteOrder);

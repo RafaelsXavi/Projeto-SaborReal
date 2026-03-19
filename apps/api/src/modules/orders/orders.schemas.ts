@@ -8,6 +8,7 @@ export const orderLineSchema = z.object({
 
 export const placeOrderSchema = z.object({
   lines: z.array(orderLineSchema).min(1).max(50),
+  distanceKm: z.number().min(0).max(500).optional(),
 });
 
 export const updateOrderStatusSchema = z.object({

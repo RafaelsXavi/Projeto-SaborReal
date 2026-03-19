@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { useMemo } from 'react';
 import { apiFetch, userFriendlyError } from '../api';
 
 export type CatalogCategory = {
@@ -62,97 +63,110 @@ function isCatalogItem(value: unknown): value is CatalogItem {
 
 const seedCatalog: CatalogItem[] = [
   {
-    id: 'x-burger',
-    name: 'X-Burger',
-    priceCents: 2490,
-    description: 'Hambúrguer artesanal com queijo e molho da casa.',
-    categoryId: 'pratos',
-    categoryName: 'Pratos Principais',
+    id: 'tapioca-salgada-frango-com-requeijao',
+    name: 'Frango com Requeijao',
+    priceCents: 1500,
+    description: 'Tapioca salgada de frango com requeijao.',
+    categoryId: 'tapiocas-salgadas',
+    categoryName: 'Tapiocas Salgadas',
+    imageUrl: '/images/tapiocafrango.jpeg',
+    available: true,
   },
   {
-    id: 'x-salada',
-    name: 'X-Salada',
-    priceCents: 2890,
-    description: 'Clássico com salada.',
-    categoryId: 'pratos',
-    categoryName: 'Pratos Principais',
+    id: 'pastel-salgado-carne-com-queijo',
+    name: 'Pastel Carne com Queijo',
+    priceCents: 1100,
+    description: 'Pastel salgado de carne com queijo.',
+    categoryId: 'pasteis-salgados',
+    categoryName: 'Pasteis Salgados',
+    imageUrl: '/images/pastel.jpeg',
+    available: true,
   },
   {
-    id: 'batata',
-    name: 'Batata Frita',
-    priceCents: 1590,
-    description: 'Porção crocante.',
-    categoryId: 'entradas',
-    categoryName: 'Entradas',
+    id: 'pudim-fatia',
+    name: 'Fatia do Pudim',
+    priceCents: 1000,
+    description: 'Nossa famosa fatia de pudim de leite.',
+    categoryId: 'sobremesas',
+    categoryName: 'Sobremesas',
+    imageUrl: '/images/pudimPedaco.jpeg',
+    available: true,
   },
   {
-    id: 'refri',
-    name: 'Refrigerante Lata',
-    priceCents: 790,
-    description: 'Bem gelado.',
+    id: 'refri-200ml',
+    name: 'Refri 200ml',
+    priceCents: 300,
+    description: 'Refrigerante 200ml geladinho.',
     categoryId: 'bebidas',
     categoryName: 'Bebidas',
+    imageUrl: '/images/Logo_Sabor_Real-removebg-preview.png',
+    available: true,
   },
 ];
 
 const seedCategories: CatalogCategory[] = [
-  { id: 'entradas', name: 'Entradas', sortOrder: 1 },
-  { id: 'pratos', name: 'Pratos Principais', sortOrder: 2 },
-  { id: 'bebidas', name: 'Bebidas', sortOrder: 3 },
-  { id: 'sobremesas', name: 'Sobremesas', sortOrder: 4 },
+  { id: 'tapiocas-salgadas', name: 'Tapiocas', sortOrder: 1 },
+  { id: 'pasteis-salgados', name: 'Pasteis', sortOrder: 2 },
+  { id: 'sobremesas', name: 'Sobremesas', sortOrder: 3 },
+  { id: 'bebidas', name: 'Bebidas', sortOrder: 4 },
 ];
 
+async function fetchCatalog(): Promise<{
+  items: CatalogItem[];
+  categories: CatalogCategory[];
+}> {
+  const res = await apiFetch('/v1/catalog');
+  const data = (await res.json()) as CatalogResponse;
+
+  const itemsRaw = Array.isArray(data.items) ? data.items : [];
+  const items = itemsRaw.filter(isCatalogItem);
+
+  const categoriesRaw = Array.isArray(data.categories) ? data.categories : [];
+  let categories = categoriesRaw.filter(isCatalogCategory);
+
+  if (categories.length > 0) {
+    categories = categories.slice().sort((a: CatalogCategory, b: CatalogCategory) => {
+      const sa = a.sortOrder ?? 9999;
+      const sb = b.sortOrder ?? 9999;
+      if (sa !== sb) return sa - sb;
+      return a.name.localeCompare(b.name);
+    });
+  } else if (items.length > 0) {
+    const byName = new Map<string, CatalogCategory>();
+    for (const it of items) {
+      const name = it.categoryName;
+      const id = it.categoryId;
+      if (!name || !id) continue;
+      if (!byName.has(id)) byName.set(id, { id, name });
+    }
+    categories = Array.from(byName.values());
+  } else {
+    categories = seedCategories;
+  }
+
+  return { items: items.length > 0 ? items : seedCatalog, categories };
+}
+
 export function useCatalog() {
-  const [catalog, setCatalog] = useState<CatalogItem[]>(seedCatalog);
-  const [categories, setCategories] =
-    useState<CatalogCategory[]>(seedCategories);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['catalog'],
+    queryFn: fetchCatalog,
+    placeholderData: { items: seedCatalog, categories: seedCategories },
+  });
 
-  useEffect(() => {
-    setLoading(true);
-    apiFetch('/v1/catalog')
-      .then((res) => res.json() as Promise<CatalogResponse>)
-      .then((data) => {
-        const itemsRaw = Array.isArray(data.items) ? data.items : [];
-        const normalized = itemsRaw.filter(isCatalogItem);
-        if (normalized.length > 0) setCatalog(normalized);
-
-        const categoriesRaw = Array.isArray(data.categories)
-          ? data.categories
-          : [];
-        const normalizedCategories = categoriesRaw.filter(isCatalogCategory);
-        if (normalizedCategories.length > 0) {
-          // Stable ordering if sortOrder exists.
-          setCategories(
-            normalizedCategories.slice().sort((a, b) => {
-              const sa = a.sortOrder ?? 9999;
-              const sb = b.sortOrder ?? 9999;
-              if (sa !== sb) return sa - sb;
-              return a.name.localeCompare(b.name);
-            }),
-          );
-        } else if (normalized.length > 0) {
-          // Derive from items if API didn't send categories.
-          const byName = new Map<string, CatalogCategory>();
-          for (const it of normalized) {
-            const name = it.categoryName;
-            const id = it.categoryId;
-            if (!name || !id) continue;
-            if (!byName.has(id)) byName.set(id, { id, name });
-          }
-          if (byName.size > 0) setCategories(Array.from(byName.values()));
-        }
-      })
-      .catch((e: unknown) => setError(userFriendlyError(e)))
-      .finally(() => setLoading(false));
-  }, []);
+  const catalog = data?.items ?? seedCatalog;
+  const categories = data?.categories ?? seedCategories;
 
   const availableCount = useMemo(
-    () => catalog.filter((it) => it.available ?? true).length,
+    () => catalog.filter((it: CatalogItem) => it.available ?? true).length,
     [catalog],
   );
 
-  return { catalog, categories, availableCount, loading, error };
+  return {
+    catalog,
+    categories,
+    availableCount,
+    loading: isLoading,
+    error: error ? userFriendlyError(error) : null,
+  };
 }
-

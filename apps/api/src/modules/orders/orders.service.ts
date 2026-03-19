@@ -2,7 +2,7 @@ import { env } from '../../config/env.js';
 import { getPgPool } from '../../db/postgres.js';
 import { PgOrdersRepo } from './orders.pg.repo.js';
 import { InMemoryOrdersRepo } from './orders.repo.js';
-import type { Order, OrderLine } from './orders.types.js';
+import type { EnrichedOrder, Order, OrderLine } from './orders.types.js';
 
 type OrdersRepo = {
   placeOrder(input: {
@@ -10,28 +10,104 @@ type OrdersRepo = {
     lines: OrderLine[];
     idempotencyKey: string;
     body: unknown;
+    distanceKm?: number | undefined;
   }): Promise<{ order: Order; replay: boolean }>;
   listByUser(userId: string): Promise<Order[]>;
   listAll(): Promise<Order[]>;
-  listAvailableForCourier(): Promise<Order[]>;
-  listByCourier(courierId: string): Promise<Order[]>;
-  acceptOrder(input: { orderId: string; courierId: string }): Promise<Order>;
+  listAvailableForMotoboy(): Promise<Order[]>;
+  listByMotoboy(motoboyId: string): Promise<Order[]>;
+  acceptOrder(input: { orderId: string; motoboyId: string }): Promise<Order>;
   updateStatus(input: {
     orderId: string;
     status: Order['status'];
   }): Promise<Order>;
   cancelOrder(input: { orderId: string; userId: string }): Promise<Order>;
-  completeByCourier(input: {
+  completeByMotoboy(input: {
     orderId: string;
-    courierId: string;
+    motoboyId: string;
   }): Promise<Order>;
 };
 
 let cachedRepo: OrdersRepo | null = null;
 
+function isPgUnhealthyError(err: unknown) {
+  const code = (err as { code?: unknown } | null)?.code;
+  const errno = (err as { errno?: unknown } | null)?.errno;
+  if (code === '42P01') return true; // undefined_table (migrations missing)
+  if (code === 'ECONNREFUSED') return true;
+  if (code === 'ETIMEDOUT') return true;
+  if (code === 'ECONNRESET') return true;
+  if (errno === -4078) return true; // Windows: connect ECONNREFUSED
+  return false;
+}
+
 function resolveRepo(): OrdersRepo {
   const pool = getPgPool();
-  if (pool) return new PgOrdersRepo(pool);
+  if (pool) {
+    const pg = new PgOrdersRepo(pool);
+    if (env.NODE_ENV === 'production') return pg;
+
+    // Dev/test: if Postgres is configured but unavailable, fall back to in-memory
+    // so the app remains usable without a local DB.
+    const mem = new InMemoryOrdersRepo();
+    const fallback: OrdersRepo = {
+      placeOrder: async (input) => mem.placeOrder(input),
+      listByUser: async (userId) => mem.listByUser(userId),
+      listAll: async () => mem.listAll(),
+      listAvailableForMotoboy: async () => mem.listAvailableForMotoboy(),
+      listByMotoboy: async (motoboyId) => mem.listByMotoboy(motoboyId),
+      acceptOrder: async (input) => mem.acceptOrder(input),
+      updateStatus: async (input) => mem.updateStatus(input),
+      cancelOrder: async (input) => mem.cancelOrder(input),
+      completeByMotoboy: async (input) => mem.completeByMotoboy(input),
+    };
+
+    const wrap =
+      <T>(pgFn: () => Promise<T>, memFn: () => Promise<T>) =>
+      async () => {
+        try {
+          return await pgFn();
+        } catch (err) {
+          if (isPgUnhealthyError(err)) {
+            cachedRepo = fallback;
+            return await memFn();
+          }
+          throw err;
+        }
+      };
+
+    return {
+      placeOrder: async (input) =>
+        wrap(() => pg.placeOrder(input), () => fallback.placeOrder(input))(),
+      listByUser: async (userId) =>
+        wrap(() => pg.listByUser(userId), () => fallback.listByUser(userId))(),
+      listAll: async () => wrap(() => pg.listAll(), () => fallback.listAll())(),
+      listAvailableForMotoboy: async () =>
+        wrap(
+          () => pg.listAvailableForMotoboy(),
+          () => fallback.listAvailableForMotoboy(),
+        )(),
+      listByMotoboy: async (motoboyId) =>
+        wrap(
+          () => pg.listByMotoboy(motoboyId),
+          () => fallback.listByMotoboy(motoboyId),
+        )(),
+      acceptOrder: async (input) =>
+        wrap(() => pg.acceptOrder(input), () => fallback.acceptOrder(input))(),
+      updateStatus: async (input) =>
+        wrap(
+          () => pg.updateStatus(input),
+          () => fallback.updateStatus(input),
+        )(),
+      cancelOrder: async (input) =>
+        wrap(() => pg.cancelOrder(input), () => fallback.cancelOrder(input))(),
+      completeByMotoboy: async (input) =>
+        wrap(
+          () => pg.completeByMotoboy(input),
+          () => fallback.completeByMotoboy(input),
+        )(),
+    };
+  }
 
   if (env.NODE_ENV === 'production') {
     throw new Error('DATABASE_NOT_CONFIGURED');
@@ -42,12 +118,12 @@ function resolveRepo(): OrdersRepo {
     placeOrder: async (input) => mem.placeOrder(input),
     listByUser: async (userId) => mem.listByUser(userId),
     listAll: async () => mem.listAll(),
-    listAvailableForCourier: async () => mem.listAvailableForCourier(),
-    listByCourier: async (courierId) => mem.listByCourier(courierId),
+    listAvailableForMotoboy: async () => mem.listAvailableForMotoboy(),
+    listByMotoboy: async (motoboyId) => mem.listByMotoboy(motoboyId),
     acceptOrder: async (input) => mem.acceptOrder(input),
     updateStatus: async (input) => mem.updateStatus(input),
     cancelOrder: async (input) => mem.cancelOrder(input),
-    completeByCourier: async (input) => mem.completeByCourier(input),
+    completeByMotoboy: async (input) => mem.completeByMotoboy(input),
   };
 }
 
@@ -62,6 +138,7 @@ export async function placeOrder(input: {
   lines: OrderLine[];
   idempotencyKey: string;
   body: unknown;
+  distanceKm?: number | undefined;
 }) {
   return await repo().placeOrder(input);
 }
@@ -75,16 +152,16 @@ export async function listAllOrders() {
 }
 
 export async function listAvailableOrders() {
-  return await repo().listAvailableForCourier();
+  return await repo().listAvailableForMotoboy();
 }
 
-export async function listOrdersForCourier(courierId: string) {
-  return await repo().listByCourier(courierId);
+export async function listOrdersForMotoboy(motoboyId: string) {
+  return await repo().listByMotoboy(motoboyId);
 }
 
 export async function acceptOrder(input: {
   orderId: string;
-  courierId: string;
+  motoboyId: string;
 }) {
   return await repo().acceptOrder(input);
 }
@@ -100,10 +177,41 @@ export async function cancelOrder(input: { orderId: string; userId: string }) {
   return await repo().cancelOrder(input);
 }
 
-export async function completeByCourier(input: {
+export async function completeByMotoboy(input: {
   orderId: string;
-  courierId: string;
+  motoboyId: string;
 }) {
-  return await repo().completeByCourier(input);
+  return await repo().completeByMotoboy(input);
 }
 
+// ── Enriched queries for the Motoboy view ────────────────────────────
+
+export async function listAvailableOrdersEnriched(): Promise<EnrichedOrder[]> {
+  const pool = getPgPool();
+  if (pool) {
+    const pgRepo = new PgOrdersRepo(pool);
+    return pgRepo.listAvailableForMotoboyEnriched();
+  }
+  // In-memory fallback: convert basic orders to enriched format
+  const orders = await repo().listAvailableForMotoboy();
+  return orders.map((o) => ({
+    ...o,
+    lines: o.lines.map((l) => ({ ...l, name: l.id })),
+    customerPhone: null,
+  }));
+}
+
+export async function listOrdersForMotoboyEnriched(motoboyId: string): Promise<EnrichedOrder[]> {
+  const pool = getPgPool();
+  if (pool) {
+    const pgRepo = new PgOrdersRepo(pool);
+    return pgRepo.listByMotoboyEnriched(motoboyId);
+  }
+  // In-memory fallback
+  const orders = await repo().listByMotoboy(motoboyId);
+  return orders.map((o) => ({
+    ...o,
+    lines: o.lines.map((l) => ({ ...l, name: l.id })),
+    customerPhone: null,
+  }));
+}

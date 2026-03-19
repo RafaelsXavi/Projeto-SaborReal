@@ -1,14 +1,14 @@
 services:
   - type: postgres
     name: saborreal-postgres
-    region: ohio  # or closest
+    region: oregon  # ajuste para a mesma regiao do seu Postgres (ex.: oregon)
     plan: starter
 
   - type: web
     name: saborreal-api
     env: docker
     dockerfilePath: ./apps/api/Dockerfile
-    repo: https://github.com/YOUR_USERNAME/projeto-saborreal  # UPDATE with your GitHub repo
+    repo: https://github.com/YOUR_USERNAME/projeto-saborreal  # UPDATE com seu repo
     envVars:
       - key: NODE_ENV
         value: production
@@ -19,18 +19,21 @@ services:
       - key: JWT_SECRET
         generateValue: true  # Or paste the generated one
       - key: CORS_ORIGINS
-        value: https://saborreal-web.onrender.com  # UPDATE after web service created
+        value: https://saborreal-web.onrender.com  # UPDATE para o dominio real do web
       - key: TRUST_PROXY
         value: 'true'
       - key: DEV_AUTH_ENABLED
         value: 'false'
+      # Se o Postgres exigir TLS (comum em provedores):
+      # - key: PG_SSL
+      #   value: 'true'
     healthCheckPath: /healthz
     port: 10000  # Render auto-injects $PORT
 
   - type: web
     name: saborreal-web
     env: static
-    repo: https://github.com/YOUR_USERNAME/projeto-saborreal  # UPDATE
+    repo: https://github.com/YOUR_USERNAME/projeto-saborreal  # UPDATE com seu repo
     rootDir: apps/web
     envVars:
       - key: VITE_API_URL

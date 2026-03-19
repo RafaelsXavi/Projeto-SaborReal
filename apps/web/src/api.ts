@@ -9,9 +9,9 @@ export function isApiFetchError(value: unknown): value is ApiFetchError {
 }
 
 export function userFriendlyError(value: unknown) {
-  // Também pode vir de erros locais (ex.: throw new Error('UNAUTHENTICATED'))
+  // Tambem pode vir de erros locais (ex.: throw new Error('UNAUTHENTICATED'))
   if (value instanceof Error && value.message === 'UNAUTHENTICATED') {
-    return 'Você precisa entrar para continuar.';
+    return 'Voce precisa entrar para continuar.';
   }
 
   if (isApiFetchError(value)) {
@@ -19,35 +19,35 @@ export function userFriendlyError(value: unknown) {
       case 'DATABASE_NOT_CONFIGURED':
         return 'API sem banco configurado (Postgres). Rode as migrations e suba o Postgres.';
       case 'INVALID_CREDENTIALS':
-        return 'Credenciais inválidas.';
+        return 'Credenciais invalidas.';
       case 'USER_ALREADY_EXISTS':
-        return 'Usuário já existe.';
+        return 'Usuario ja existe.';
       case 'UNAUTHENTICATED':
-        return 'Você precisa entrar para continuar.';
+        return 'Voce precisa entrar para continuar.';
       case 'FORBIDDEN':
-        return 'Você não tem permissão para executar esta ação.';
+        return 'Voce nao tem permissao para executar esta acao.';
       case 'CSRF_INVALID':
-        return 'Sessão inválida (CSRF). Refaça o login.';
+        return 'Sessao invalida (CSRF). Refaca o login.';
       case 'IDEMPOTENCY_KEY_REUSED':
         return 'Idempotency-Key reutilizada com payload diferente.';
       case 'ORDER_NOT_READY_FOR_PICKUP':
-        return 'Este pedido ainda não está pronto para retirada.';
-      case 'ORDER_COURIER_REQUIRED':
+        return 'Este pedido ainda nao esta pronto para retirada.';
+      case 'ORDER_MOTOBOY_REQUIRED':
         return 'Aguardando um motoboy aceitar o pedido.';
       case 'ORDER_ALREADY_ASSIGNED':
-        return 'Este pedido já foi atribuído a outro motoboy.';
+        return 'Este pedido ja foi atribuido a outro motoboy.';
       case 'ORDER_INVALID_STATUS_TRANSITION':
-        return 'Transição de status inválida para este pedido.';
+        return 'Transicao de status invalida para este pedido.';
       case 'ORDER_NOT_AVAILABLE':
-        return 'Pedido não está disponível.';
+        return 'Pedido nao esta disponivel.';
       case 'ORDER_NOT_ASSIGNED':
-        return 'Pedido ainda não foi atribuído.';
+        return 'Pedido ainda nao foi atribuido.';
       case 'ORDER_NOT_COMPLETABLE':
-        return 'Pedido não pode ser finalizado neste estado.';
+        return 'Pedido nao pode ser finalizado neste estado.';
       case 'ORDER_NOT_CANCELLABLE':
-        return 'Pedido não pode ser cancelado neste estado.';
+        return 'Pedido nao pode ser cancelado neste estado.';
       case 'ORDER_NOT_FOUND':
-        return 'Pedido não encontrado.';
+        return 'Pedido nao encontrado.';
       default:
         return value.message;
     }

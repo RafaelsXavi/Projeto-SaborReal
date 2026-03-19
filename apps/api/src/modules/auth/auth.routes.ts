@@ -43,7 +43,7 @@ authRouter.post('/refresh', refresh);
 authRouter.post('/logout', logout);
 authRouter.get('/session', session);
 
-// DEV ONLY: create admin/courier accounts without seeding.
+// DEV ONLY: create admin/motoboy accounts without seeding.
 authRouter.post(
   '/dev-create-user',
   validateBody(devCreateUserSchema),

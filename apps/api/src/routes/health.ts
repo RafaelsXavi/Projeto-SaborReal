@@ -12,7 +12,8 @@ function summarizeSettled(
     if (r.value.ok) return 'ok';
     return `not_ok(${r.value.reason ?? 'unknown'})`;
   }
-  const reason = (r.reason as { message?: unknown } | null)?.message ?? r.reason;
+  const reason =
+    (r.reason as { message?: unknown } | null)?.message ?? r.reason;
   return `rejected(${String(reason)})`;
 }
 

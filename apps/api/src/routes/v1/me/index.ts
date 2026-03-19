@@ -7,7 +7,7 @@ import { listOrdersForUser } from '../../../modules/orders/orders.service.js';
 export const meRouter = Router();
 
 meRouter.use(requireAuth());
-meRouter.use(requireRole('customer', 'admin', 'courier'));
+meRouter.use(requireRole('customer', 'admin', 'motoboy'));
 
 meRouter.get('/orders', async (req, res, next) => {
   try {

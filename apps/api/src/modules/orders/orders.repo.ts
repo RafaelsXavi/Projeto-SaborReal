@@ -32,10 +32,10 @@ const FLOW_RANK: Record<Exclude<Order['status'], 'CANCELLED'>, number> = {
 
 function validateStatusUpdate(input: {
   currentStatus: Order['status'];
-  courierId: string | null;
+  motoboyId: string | null;
   nextStatus: Order['status'];
 }) {
-  const { currentStatus, nextStatus, courierId } = input;
+  const { currentStatus, nextStatus, motoboyId } = input;
 
   if (nextStatus === currentStatus) return;
 
@@ -46,10 +46,10 @@ function validateStatusUpdate(input: {
   if (nextStatus === 'CANCELLED') return;
 
   if (nextStatus === 'OUT_FOR_DELIVERY' || nextStatus === 'COMPLETED') {
-    if (!courierId) throw new Error('ORDER_COURIER_REQUIRED');
+    if (!motoboyId) throw new Error('ORDER_MOTOBOY_REQUIRED');
   }
 
-  if (courierId) {
+  if (motoboyId) {
     const nextRank = FLOW_RANK[nextStatus];
     if (nextRank < FLOW_RANK.OUT_FOR_DELIVERY) {
       throw new Error('ORDER_INVALID_STATUS_TRANSITION');
@@ -72,6 +72,7 @@ export class InMemoryOrdersRepo {
     lines: OrderLine[];
     idempotencyKey: string;
     body: unknown;
+    distanceKm?: number | undefined;
   }): { order: Order; replay: boolean } {
     const idKey = `${input.userId}:${input.idempotencyKey}`;
     const bodyHash = hashBody(input.body);
@@ -87,11 +88,16 @@ export class InMemoryOrdersRepo {
     }
 
     const id = randomUUID();
+    const distanceKm = input.distanceKm ?? 0;
+    const deliveryFee = Number((distanceKm * 1.4).toFixed(2));
+
     const order: Order = {
       id,
       userId: input.userId,
       status: 'PLACED',
       lines: input.lines,
+      distanceKm,
+      deliveryFee,
       createdAt: new Date().toISOString(),
     };
 
@@ -115,27 +121,27 @@ export class InMemoryOrdersRepo {
     return this.listAll().filter((o) => o.userId === userId);
   }
 
-  listAvailableForCourier(): Order[] {
+  listAvailableForMotoboy(): Order[] {
     return this.listAll().filter(
-      (o) => !o.courierId && o.status === 'READY_FOR_PICKUP',
+      (o) => !o.motoboyId && o.status === 'READY_FOR_PICKUP',
     );
   }
 
-  listByCourier(courierId: string): Order[] {
-    return this.listAll().filter((o) => o.courierId === courierId);
+  listByMotoboy(motoboyId: string): Order[] {
+    return this.listAll().filter((o) => o.motoboyId === motoboyId);
   }
 
-  acceptOrder(input: { orderId: string; courierId: string }): Order {
+  acceptOrder(input: { orderId: string; motoboyId: string }): Order {
     const order = this.orders.get(input.orderId);
     if (!order) throw new Error('ORDER_NOT_FOUND');
-    if (order.courierId) throw new Error('ORDER_ALREADY_ASSIGNED');
+    if (order.motoboyId) throw new Error('ORDER_ALREADY_ASSIGNED');
     if (order.status === 'CANCELLED') throw new Error('ORDER_NOT_AVAILABLE');
     if (order.status !== 'READY_FOR_PICKUP')
       throw new Error('ORDER_NOT_READY_FOR_PICKUP');
 
     const next: Order = {
       ...order,
-      courierId: input.courierId,
+      motoboyId: input.motoboyId,
       status: 'OUT_FOR_DELIVERY',
     };
     this.orders.set(order.id, next);
@@ -148,7 +154,7 @@ export class InMemoryOrdersRepo {
 
     validateStatusUpdate({
       currentStatus: order.status,
-      courierId: order.courierId ?? null,
+      motoboyId: order.motoboyId ?? null,
       nextStatus: input.status,
     });
 
@@ -171,11 +177,11 @@ export class InMemoryOrdersRepo {
     return next;
   }
 
-  completeByCourier(input: { orderId: string; courierId: string }): Order {
+  completeByMotoboy(input: { orderId: string; motoboyId: string }): Order {
     const order = this.orders.get(input.orderId);
     if (!order) throw new Error('ORDER_NOT_FOUND');
-    if (!order.courierId) throw new Error('ORDER_NOT_ASSIGNED');
-    if (order.courierId !== input.courierId) throw new Error('FORBIDDEN');
+    if (!order.motoboyId) throw new Error('ORDER_NOT_ASSIGNED');
+    if (order.motoboyId !== input.motoboyId) throw new Error('FORBIDDEN');
     if (order.status !== 'OUT_FOR_DELIVERY')
       throw new Error('ORDER_NOT_COMPLETABLE');
 

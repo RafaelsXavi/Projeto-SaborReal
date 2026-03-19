@@ -119,19 +119,49 @@ export const devCreateUser: RequestHandler = async (req, res, next) => {
 };
 
 export const login: RequestHandler = async (req, res, next) => {
+  const body = req.body as { identifier: string; password: string };
+  const identifier = body.identifier.toLowerCase();
+
+  // DEV MOCK AUTH FALLBACK (Global)
+  if (env.DEV_AUTH_ENABLED) {
+    const devAccounts: Record<string, { role: Role; pass: string }> = {
+      'admin@saborreal.com': { role: 'admin', pass: 'admin1234' },
+      'motoboy@saborreal.com': { role: 'motoboy', pass: 'motoboy1234' },
+      'customer@saborreal.com': { role: 'customer', pass: 'customer1234' },
+    };
+
+    if (
+      devAccounts[identifier] &&
+      devAccounts[identifier].pass === body.password
+    ) {
+      const sessionUser = {
+        userId: `mock-${identifier.split('@')[0]}`,
+        role: devAccounts[identifier].role,
+      };
+      const accessToken = issueAccessToken(sessionUser);
+      const csrfToken = newCsrfToken();
+
+      res.cookie(
+        env.ACCESS_TOKEN_COOKIE_NAME,
+        accessToken,
+        accessTokenCookieOptions(),
+      );
+      res.cookie(env.CSRF_COOKIE_NAME, csrfToken, csrfCookieOptions());
+      return res.json({ ok: true, user: sessionUser });
+    }
+  }
+
   try {
     const pool = requirePgPool();
     const users = new PgUsersRepo(pool);
     const refreshTokens = new PgRefreshTokensRepo(pool);
 
-    const body = req.body as { identifier: string; password: string };
     const id = parseIdentifier(body.identifier);
-
     const user = id.email
       ? await users.findByEmail(id.email)
       : await users.findByPhone(id.phone ?? '');
-    if (!user) return next(new AppError('INVALID_CREDENTIALS', 401));
-    if (!verifyPassword(body.password, user.passwordHash)) {
+
+    if (!user || !verifyPassword(body.password, user.passwordHash)) {
       return next(new AppError('INVALID_CREDENTIALS', 401));
     }
 

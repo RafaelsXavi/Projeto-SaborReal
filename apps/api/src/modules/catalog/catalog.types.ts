@@ -19,4 +19,3 @@ export type CatalogResponse = {
   categories: CatalogCategory[];
   items: CatalogItem[];
 };
-

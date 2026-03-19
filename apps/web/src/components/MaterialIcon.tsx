@@ -15,4 +15,3 @@ export function MaterialIcon({ name, className, fill }: Props) {
 
   return <span className={cn}>{name}</span>;
 }
-

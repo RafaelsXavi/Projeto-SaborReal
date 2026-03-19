@@ -1,6 +1,6 @@
 import { getPgPool } from '../../db/postgres.js';
-import type { CatalogResponse } from './catalog.types.js';
 import { seedCatalog } from './catalog.seed.js';
+import type { CatalogResponse } from './catalog.types.js';
 
 export async function listCatalog(): Promise<CatalogResponse> {
   const pool = getPgPool();
@@ -64,8 +64,10 @@ export async function listCatalog(): Promise<CatalogResponse> {
   } catch (err) {
     // Postgres "undefined_table" is 42P01.
     const code = (err as { code?: unknown } | null)?.code;
-    if (code === '42P01') return seedCatalog;
+    const errno = (err as { errno?: unknown } | null)?.errno;
+    if (code === '42P01' || code === 'ECONNREFUSED' || errno === -4078) {
+      return seedCatalog;
+    }
     throw err;
   }
 }
-

@@ -3,6 +3,7 @@ import { getPgPool } from '../../db/postgres.js';
 import { AppError } from '../../middleware/error.js';
 import { PgJobsRepo } from '../jobs/jobs.repo.js';
 import { placeOrder } from './orders.service.js';
+import { placeOrderSchema } from './orders.schemas.js';
 
 function getIdempotencyKey(req: Parameters<RequestHandler>[0]) {
   const raw = req.header('idempotency-key')?.trim();
@@ -19,13 +20,19 @@ export const placeOrderHandler: RequestHandler = async (req, res, next) => {
     if (!idempotencyKey)
       return next(new AppError('MISSING_IDEMPOTENCY_KEY', 400));
 
-    const body = req.body as { lines: { id: string; qty: number }[] };
+    const validated = placeOrderSchema.safeParse(req.body);
+    if (!validated.success) {
+      return next(new AppError('INVALID_INPUT', 400));
+    }
+
+    const { lines, distanceKm } = validated.data;
     try {
       const result = await placeOrder({
         userId: req.auth.userId,
-        lines: body.lines,
+        lines,
         idempotencyKey,
-        body,
+        body: req.body,
+        distanceKm,
       });
 
       res.status(result.replay ? 200 : 201).json({
@@ -38,10 +45,12 @@ export const placeOrderHandler: RequestHandler = async (req, res, next) => {
       const pool = getPgPool();
       if (pool) {
         const jobs = new PgJobsRepo(pool);
-        void jobs.enqueue({
+        void jobs
+          .enqueue({
           name: 'orders.after_place',
           payload: { orderId: result.order.id, userId: req.auth.userId },
-        });
+          })
+          .catch(() => undefined);
       }
     } catch (err) {
       if (!(err instanceof Error)) throw err;

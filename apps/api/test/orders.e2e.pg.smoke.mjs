@@ -88,7 +88,7 @@ function requireEnv(name) {
 async function createAndLogin(baseUrl, { identifier, password }) {
   const jar = new CookieJar();
 
-  // Create user (customer/admin/courier depending on endpoint used before calling this).
+  // Create user (customer/admin/motoboy depending on endpoint used before calling this).
   {
     const res = await fetch(`${baseUrl}/v1/auth/login`, {
       method: 'POST',
@@ -104,7 +104,7 @@ async function createAndLogin(baseUrl, { identifier, password }) {
   return { jar, csrf };
 }
 
-await run('Orders E2E: customer -> admin -> courier -> customer', async () => {
+await run('Orders E2E: customer -> admin -> motoboy -> customer', async () => {
   if (process.env.SMOKE_WITH_DB !== 'true') {
     console.log('skip - set SMOKE_WITH_DB=true to run');
     return;
@@ -112,7 +112,10 @@ await run('Orders E2E: customer -> admin -> courier -> customer', async () => {
 
   requireEnv('DATABASE_URL');
 
-  if (process.env.DEV_AUTH_ENABLED !== 'true' && env.DEV_AUTH_ENABLED !== true) {
+  if (
+    process.env.DEV_AUTH_ENABLED !== 'true' &&
+    env.DEV_AUTH_ENABLED !== true
+  ) {
     console.log('skip - DEV_AUTH_ENABLED must be true to run');
     return;
   }
@@ -123,10 +126,10 @@ await run('Orders E2E: customer -> admin -> courier -> customer', async () => {
       password: 'dev-password-123',
       role: 'admin',
     };
-    const courier = {
-      identifier: `courier-${crypto.randomUUID()}@example.com`,
+    const motoboy = {
+      identifier: `motoboy-${crypto.randomUUID()}@example.com`,
       password: 'dev-password-123',
-      role: 'courier',
+      role: 'motoboy',
     };
     const customer = {
       identifier: `customer-${crypto.randomUUID()}@example.com`,
@@ -142,7 +145,7 @@ await run('Orders E2E: customer -> admin -> courier -> customer', async () => {
       });
       assert.equal(res.status, 201);
     }
-    for (const u of [admin, courier]) {
+    for (const u of [admin, motoboy]) {
       const res = await fetch(`${baseUrl}/v1/auth/dev-create-user`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -153,7 +156,7 @@ await run('Orders E2E: customer -> admin -> courier -> customer', async () => {
 
     const customerSession = await createAndLogin(baseUrl, customer);
     const adminSession = await createAndLogin(baseUrl, admin);
-    const courierSession = await createAndLogin(baseUrl, courier);
+    const motoboySession = await createAndLogin(baseUrl, motoboy);
 
     // Customer places order
     let orderId;
@@ -193,36 +196,39 @@ await run('Orders E2E: customer -> admin -> courier -> customer', async () => {
       assert.equal(body.order.status, 'READY_FOR_PICKUP');
     }
 
-    // Courier accepts -> OUT_FOR_DELIVERY
+    // Motoboy accepts -> OUT_FOR_DELIVERY
     {
-      const res = await fetch(`${baseUrl}/v1/courier/orders/${orderId}/accept`, {
-        method: 'POST',
-        headers: {
-          Cookie: courierSession.jar.header(),
-          'X-CSRF-Token': courierSession.csrf,
+      const res = await fetch(
+        `${baseUrl}/v1/motoboy/orders/${orderId}/accept`,
+        {
+          method: 'POST',
+          headers: {
+            Cookie: motoboySession.jar.header(),
+            'X-CSRF-Token': motoboySession.csrf,
+          },
         },
-      });
-      courierSession.jar.ingestResponse(res);
+      );
+      motoboySession.jar.ingestResponse(res);
       assert.equal(res.status, 200);
       const body = await res.json();
       assert.equal(body.ok, true);
       assert.equal(body.order.status, 'OUT_FOR_DELIVERY');
-      assert.ok(body.order.courierId);
+      assert.ok(body.order.motoboyId);
     }
 
-    // Courier completes -> COMPLETED
+    // Motoboy completes -> COMPLETED
     {
       const res = await fetch(
-        `${baseUrl}/v1/courier/orders/${orderId}/complete`,
+        `${baseUrl}/v1/motoboy/orders/${orderId}/complete`,
         {
           method: 'POST',
           headers: {
-            Cookie: courierSession.jar.header(),
-            'X-CSRF-Token': courierSession.csrf,
+            Cookie: motoboySession.jar.header(),
+            'X-CSRF-Token': motoboySession.csrf,
           },
         },
       );
-      courierSession.jar.ingestResponse(res);
+      motoboySession.jar.ingestResponse(res);
       assert.equal(res.status, 200);
       const body = await res.json();
       assert.equal(body.ok, true);
@@ -243,4 +249,3 @@ await run('Orders E2E: customer -> admin -> courier -> customer', async () => {
     }
   });
 });
-

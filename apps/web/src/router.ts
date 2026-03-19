@@ -3,7 +3,7 @@ export type RouteId =
   | 'menu'
   | 'cart'
   | 'orders'
-  | 'courier'
+  | 'motoboy'
   | 'admin';
 
 export function routeToHash(route: RouteId) {
@@ -20,7 +20,7 @@ export function parseHashRoute(hash: string): RouteId | null {
     case 'menu':
     case 'cart':
     case 'orders':
-    case 'courier':
+    case 'motoboy':
     case 'admin':
       return seg;
     default:

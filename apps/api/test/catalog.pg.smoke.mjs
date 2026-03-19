@@ -98,4 +98,3 @@ await run('Catalog: /v1/catalog returns Postgres-backed items', async () => {
     await pool.end();
   }
 });
-

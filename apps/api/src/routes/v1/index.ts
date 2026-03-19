@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { authRouter } from '../../modules/auth/auth.routes.js';
 import { adminRouter } from './admin/index.js';
 import { catalogRouter } from './catalog.js';
-import { courierRouter } from './courier/index.js';
+import { motoboyRouter } from './motoboy/index.js';
 import { meRouter } from './me/index.js';
 import { ordersRouter } from './orders.js';
 
@@ -14,5 +14,5 @@ v1Router.use('/orders', ordersRouter);
 
 // Surface-isolated route groups (RBAC enforced inside each group)
 v1Router.use('/admin', adminRouter);
-v1Router.use('/courier', courierRouter);
+v1Router.use('/motoboy', motoboyRouter);
 v1Router.use('/me', meRouter);

@@ -1,4 +1,5 @@
-﻿import { z } from 'zod';
+import 'dotenv/config';
+import { z } from 'zod';
 
 const boolFromString = z.preprocess((v) => {
   if (typeof v !== 'string') return v;
@@ -50,14 +51,16 @@ const devAuthEnabled =
     ? parsed.DEV_AUTH_ENABLED
     : parsed.NODE_ENV !== 'production';
 
-const jwtSecret =
-  parsed.JWT_SECRET ??
-  (parsed.NODE_ENV === 'production' ? undefined : 'dev-insecure-secret');
-
+// In production, JWT_SECRET must be explicitly provided.
+// In dev/test, allow running without it (fallback is insecure but unblocks DX).
+let jwtSecret = parsed.JWT_SECRET;
 if (!jwtSecret) {
-  throw new Error(
-    'Missing JWT_SECRET (required when NODE_ENV=production). Set it to a long random value.',
-  );
+  if (parsed.NODE_ENV === 'production') {
+    throw new Error(
+      'Missing JWT_SECRET (required when NODE_ENV=production). Set it to a long random value.',
+    );
+  }
+  jwtSecret = 'dev-insecure-secret';
 }
 
 export const env = {

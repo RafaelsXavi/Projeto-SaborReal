@@ -1,8 +1,8 @@
 import type { RequestHandler } from 'express';
 import { AppError } from '../../middleware/error.js';
-import { completeByCourier } from './orders.service.js';
+import { completeByMotoboy } from './orders.service.js';
 
-export const courierCompleteOrder: RequestHandler = async (req, res, next) => {
+export const motoboyCompleteOrder: RequestHandler = async (req, res, next) => {
   try {
     if (!req.auth) return next(new AppError('UNAUTHENTICATED', 401));
     const raw = req.params.id;
@@ -10,9 +10,9 @@ export const courierCompleteOrder: RequestHandler = async (req, res, next) => {
     if (!orderId) return next(new AppError('INVALID_ORDER_ID', 400));
 
     try {
-      const order = await completeByCourier({
+      const order = await completeByMotoboy({
         orderId,
-        courierId: req.auth.userId,
+        motoboyId: req.auth.userId,
       });
       res.json({ ok: true, order });
     } catch (err) {

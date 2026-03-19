@@ -4,6 +4,12 @@ import { AppError } from '../../../middleware/error.js';
 import { validateBody } from '../../../middleware/validate.js';
 import { listAuditEvents } from '../../../modules/audit/audit.admin.controller.js';
 import {
+  createMotoboy,
+  deleteMotoboy,
+  listMotoboys,
+  updateMotoboy,
+} from '../../../modules/auth/motoboys.admin.controller.js';
+import {
   getJob,
   listJobs,
 } from '../../../modules/jobs/jobs.admin.controller.js';
@@ -36,3 +42,9 @@ adminRouter.patch(
 adminRouter.get('/jobs', listJobs);
 adminRouter.get('/jobs/:id', getJob);
 adminRouter.get('/audit', listAuditEvents);
+
+// Motoboy CRUD
+adminRouter.get('/motoboys', listMotoboys);
+adminRouter.post('/motoboys', createMotoboy);
+adminRouter.put('/motoboys/:id', updateMotoboy);
+adminRouter.delete('/motoboys/:id', deleteMotoboy);

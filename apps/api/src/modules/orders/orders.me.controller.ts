@@ -18,10 +18,12 @@ export const cancelMyOrder: RequestHandler = async (req, res, next) => {
       const pool = getPgPool();
       if (pool) {
         const jobs = new PgJobsRepo(pool);
-        void jobs.enqueue({
-          name: 'orders.after_cancel',
-          payload: { orderId, userId: req.auth.userId },
-        });
+        void jobs
+          .enqueue({
+            name: 'orders.after_cancel',
+            payload: { orderId, userId: req.auth.userId },
+          })
+          .catch(() => undefined);
       }
     } catch (err) {
       if (!(err instanceof Error)) throw err;

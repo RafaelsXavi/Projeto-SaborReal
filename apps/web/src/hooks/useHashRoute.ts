@@ -16,4 +16,3 @@ export function useHashRoute() {
 
   return route;
 }
-

@@ -11,7 +11,7 @@ export function AuthPanel() {
 
   const badge = useMemo(() => {
     if (loading) return '...';
-    if (!user) return 'anônimo';
+    if (!user) return 'anonimo';
     return user.role;
   }, [loading, user]);
 
@@ -40,12 +40,12 @@ export function AuthPanel() {
     <div className="notice">
       <div className="row" style={{ justifyContent: 'space-between' }}>
         <div>
-          <span className="small">Sessão:</span>{' '}
+          <span className="small">Sessao:</span>{' '}
           <span className="badge">{badge}</span>
           {user ? (
             <span className="small">
               {' '}
-              • <span className="code">{user.userId}</span>
+              - <span className="code">{user.userId}</span>
             </span>
           ) : null}
         </div>
@@ -65,7 +65,7 @@ export function AuthPanel() {
               onClick={() => setMode('login')}
               disabled={mode === 'login'}
             >
-              Login
+              Entrar
             </button>
             <button
               className="btn"
@@ -73,7 +73,7 @@ export function AuthPanel() {
               onClick={() => setMode('register')}
               disabled={mode === 'register'}
             >
-              Registrar
+              Cadastrar
             </button>
           </div>
 
@@ -82,7 +82,7 @@ export function AuthPanel() {
               value={identifier}
               onChange={(e) => setIdentifier(e.target.value)}
               className="input"
-              placeholder="email ou telefone"
+              placeholder="e-mail ou telefone"
             />
           </div>
           <div className="row" style={{ marginTop: 8 }}>

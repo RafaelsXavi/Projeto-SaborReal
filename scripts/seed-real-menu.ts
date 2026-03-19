@@ -182,7 +182,8 @@ const items: CatalogItemSeed[] = [
   {
     id: 'tapioca-salgada-calabresa-com-queijo',
     name: 'Calabresa com Queijo ou Requeijão',
-    description: 'Tapioca salgada de calabresa com opção de queijo ou requeijão.',
+    description:
+      'Tapioca salgada de calabresa com opção de queijo ou requeijão.',
     price: 13.0,
     categoryId: 'tapiocas-salgadas',
     category: 'Tapiocas Salgadas',
@@ -363,7 +364,8 @@ const items: CatalogItemSeed[] = [
   {
     id: 'pastel-salgado-calabresa-com-queijo',
     name: 'Calabresa com Queijo ou Requeijão',
-    description: 'Pastel salgado de calabresa com opção de queijo ou requeijão.',
+    description:
+      'Pastel salgado de calabresa com opção de queijo ou requeijão.',
     price: 11.0,
     categoryId: 'pasteis-salgados',
     category: 'Pastéis Salgados',
@@ -374,7 +376,8 @@ const items: CatalogItemSeed[] = [
   {
     id: 'pastel-salgado-pizza',
     name: 'Pizza',
-    description: 'Pastel salgado sabor pizza (presunto, queijo, tomate e orégano).',
+    description:
+      'Pastel salgado sabor pizza (presunto, queijo, tomate e orégano).',
     price: 11.0,
     categoryId: 'pasteis-salgados',
     category: 'Pastéis Salgados',
@@ -464,7 +467,8 @@ const items: CatalogItemSeed[] = [
   {
     id: 'batata-recheada-frango-com-requeijao',
     name: 'Frango com Requeijão ou Cheddar',
-    description: 'Batata recheada no pote com frango e opção de requeijão ou cheddar.',
+    description:
+      'Batata recheada no pote com frango e opção de requeijão ou cheddar.',
     price: 18.0,
     categoryId: 'batata-recheada',
     category: 'Batata Recheada',
@@ -475,7 +479,8 @@ const items: CatalogItemSeed[] = [
   {
     id: 'batata-recheada-calabresa-com-queijo',
     name: 'Calabresa com Queijo ou Requeijão',
-    description: 'Batata recheada no pote com calabresa e opção de queijo ou requeijão.',
+    description:
+      'Batata recheada no pote com calabresa e opção de queijo ou requeijão.',
     price: 18.0,
     categoryId: 'batata-recheada',
     category: 'Batata Recheada',

@@ -80,4 +80,64 @@ export class PgUsersRepo {
     const row = res.rows[0];
     return row ? rowToUser(row) : null;
   }
+
+  async listByRole(role: Role): Promise<Omit<DbUser, 'passwordHash'>[]> {
+    const res = await this.pool.query(
+      `select id, email, phone, role, created_at
+       from users
+       where role = $1
+       order by created_at desc`,
+      [role],
+    );
+    return res.rows.map((r: { id: string; email: string | null; phone: string | null; role: Role }) => ({
+      id: r.id,
+      email: r.email,
+      phone: r.phone,
+      role: r.role,
+    }));
+  }
+
+  async update(id: string, input: {
+    email?: string | null;
+    phone?: string | null;
+    passwordHash?: string;
+  }): Promise<DbUser | null> {
+    const sets: string[] = [];
+    const params: unknown[] = [];
+    let idx = 1;
+
+    if (input.email !== undefined) {
+      sets.push(`email = $${idx++}`);
+      params.push(input.email);
+    }
+    if (input.phone !== undefined) {
+      sets.push(`phone = $${idx++}`);
+      params.push(input.phone);
+    }
+    if (input.passwordHash !== undefined) {
+      sets.push(`password_hash = $${idx++}`);
+      params.push(input.passwordHash);
+    }
+
+    if (sets.length === 0) return this.findById(id);
+
+    sets.push(`updated_at = now()`);
+    params.push(id);
+
+    const res = await this.pool.query(
+      `update users set ${sets.join(', ')} where id = $${idx} and role = 'motoboy'
+       returning id, email, phone, password_hash, role`,
+      params,
+    );
+    const row = res.rows[0];
+    return row ? rowToUser(row) : null;
+  }
+
+  async deleteById(id: string, role: Role): Promise<boolean> {
+    const res = await this.pool.query(
+      `delete from users where id = $1 and role = $2`,
+      [id, role],
+    );
+    return (res.rowCount ?? 0) > 0;
+  }
 }

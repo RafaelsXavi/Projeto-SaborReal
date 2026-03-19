@@ -186,7 +186,7 @@ await run('Orders: customer can cancel own order', async () => {
   });
 });
 
-await run('Orders: courier can only accept READY_FOR_PICKUP', async () => {
+await run('Orders: motoboy can only accept READY_FOR_PICKUP', async () => {
   await withServer(async (baseUrl) => {
     const customerToken = accessTokenFor({
       userId: crypto.randomUUID(),
@@ -196,9 +196,9 @@ await run('Orders: courier can only accept READY_FOR_PICKUP', async () => {
       userId: crypto.randomUUID(),
       role: 'admin',
     });
-    const courierToken = accessTokenFor({
+    const motoboyToken = accessTokenFor({
       userId: crypto.randomUUID(),
-      role: 'courier',
+      role: 'motoboy',
     });
 
     const place = await fetch(`${baseUrl}/v1/orders`, {
@@ -216,8 +216,8 @@ await run('Orders: courier can only accept READY_FOR_PICKUP', async () => {
     assert.ok(orderId);
 
     const earlyAccept = await fetch(
-      `${baseUrl}/v1/courier/orders/${orderId}/accept`,
-      { method: 'POST', headers: { Authorization: `Bearer ${courierToken}` } },
+      `${baseUrl}/v1/motoboy/orders/${orderId}/accept`,
+      { method: 'POST', headers: { Authorization: `Bearer ${motoboyToken}` } },
     );
     assert.equal(earlyAccept.status, 409);
     const earlyBody = await earlyAccept.json();
@@ -236,7 +236,7 @@ await run('Orders: courier can only accept READY_FOR_PICKUP', async () => {
     );
     assert.equal(invalidAdvance.status, 409);
     const invalidBody = await invalidAdvance.json();
-    assert.equal(invalidBody.error?.code, 'ORDER_COURIER_REQUIRED');
+    assert.equal(invalidBody.error?.code, 'ORDER_MOTOBOY_REQUIRED');
 
     const ready = await fetch(`${baseUrl}/v1/admin/orders/${orderId}/status`, {
       method: 'PATCH',
@@ -249,8 +249,8 @@ await run('Orders: courier can only accept READY_FOR_PICKUP', async () => {
     assert.equal(ready.status, 200);
 
     const okAccept = await fetch(
-      `${baseUrl}/v1/courier/orders/${orderId}/accept`,
-      { method: 'POST', headers: { Authorization: `Bearer ${courierToken}` } },
+      `${baseUrl}/v1/motoboy/orders/${orderId}/accept`,
+      { method: 'POST', headers: { Authorization: `Bearer ${motoboyToken}` } },
     );
     assert.equal(okAccept.status, 200);
     const okBody = await okAccept.json();
@@ -259,11 +259,11 @@ await run('Orders: courier can only accept READY_FOR_PICKUP', async () => {
   });
 });
 
-await run('RBAC: courier cannot place orders', async () => {
+await run('RBAC: motoboy cannot place orders', async () => {
   await withServer(async (baseUrl) => {
     const accessToken = accessTokenFor({
       userId: crypto.randomUUID(),
-      role: 'courier',
+      role: 'motoboy',
     });
 
     const res = await fetch(`${baseUrl}/v1/orders`, {
@@ -325,12 +325,18 @@ await run('CSRF: blocks cookie-auth POST without token', async () => {
 });
 
 await run(
-  'GET /healthz/readyz returns 503 when DBs are not configured',
+  'GET /healthz/readyz reflects DB readiness (200 when configured, 503 otherwise)',
   async () => {
     await withServer(async (baseUrl) => {
       const res = await fetch(`${baseUrl}/healthz/readyz`);
-      assert.equal(res.status, 503);
       const body = await res.json();
+
+      if (res.status === 200) {
+        assert.equal(body.ok, true);
+        return;
+      }
+
+      assert.equal(res.status, 503);
       assert.equal(body.error?.code, 'NOT_READY');
     });
   },

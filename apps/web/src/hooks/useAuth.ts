@@ -1,36 +1,60 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiFetch } from '../api';
 
-export type Role = 'customer' | 'admin' | 'courier';
+export type Role = 'customer' | 'admin' | 'motoboy';
 export type AuthUser = { userId: string; role: Role };
 
 type SessionResponse =
   | { authenticated: false }
   | { authenticated: true; user: AuthUser };
 
+async function fetchSession(): Promise<AuthUser | null> {
+  const res = await apiFetch('/v1/auth/session');
+  const body = (await res.json()) as SessionResponse;
+  return body.authenticated ? body.user : null;
+}
+
 export function useAuth() {
-  const [user, setUser] = useState<AuthUser | null>(null);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
 
-  const refreshSession = useCallback(async () => {
-    const res = await apiFetch('/v1/auth/session');
-    const body = (await res.json()) as SessionResponse;
-    setUser(body.authenticated ? body.user : null);
-  }, []);
+  const { data: user, isLoading } = useQuery({
+    queryKey: ['session'],
+    queryFn: fetchSession,
+    retry: false,
+  });
 
-  useEffect(() => {
-    setLoading(true);
-    refreshSession()
-      .catch(() => setUser(null))
-      .finally(() => setLoading(false));
-  }, [refreshSession]);
+  const loginMutation = useMutation({
+    mutationFn: async (input: { identifier: string; password: string }) => {
+      await apiFetch('/v1/auth/login', {
+        method: 'POST',
+        body: JSON.stringify(input),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['session'] });
+    },
+  });
 
-  async function register(input: { identifier: string; password: string }) {
-    await apiFetch('/v1/auth/register', {
-      method: 'POST',
-      body: JSON.stringify(input),
-    });
-  }
+  const registerMutation = useMutation({
+    mutationFn: async (input: { identifier: string; password: string }) => {
+      await apiFetch('/v1/auth/register', {
+        method: 'POST',
+        body: JSON.stringify(input),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['session'] });
+    },
+  });
+
+  const logoutMutation = useMutation({
+    mutationFn: async () => {
+      await apiFetch('/v1/auth/logout', { method: 'POST' });
+    },
+    onSuccess: () => {
+      queryClient.setQueryData(['session'], null);
+    },
+  });
 
   async function devCreateUser(input: {
     identifier: string;
@@ -43,18 +67,14 @@ export function useAuth() {
     });
   }
 
-  async function login(input: { identifier: string; password: string }) {
-    await apiFetch('/v1/auth/login', {
-      method: 'POST',
-      body: JSON.stringify(input),
-    });
-    await refreshSession();
-  }
-
-  async function logout() {
-    await apiFetch('/v1/auth/logout', { method: 'POST' });
-    setUser(null);
-  }
-
-  return { user, loading, register, devCreateUser, login, logout, refreshSession };
+  return {
+    user: user ?? null,
+    loading: isLoading,
+    register: registerMutation.mutateAsync,
+    devCreateUser,
+    login: loginMutation.mutateAsync,
+    logout: logoutMutation.mutateAsync,
+    refreshSession: () =>
+      queryClient.invalidateQueries({ queryKey: ['session'] }),
+  };
 }

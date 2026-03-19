@@ -20,7 +20,7 @@ type Order = {
   status: OrderStatus;
   lines: { id: string; qty: number }[];
   createdAt: string;
-  courierId?: string;
+  motoboyId?: string;
 };
 
 function statusLabel(s: OrderStatus) {
@@ -85,19 +85,19 @@ export function OrdersPage() {
   }
 
   return (
-    <div className="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen flex flex-col font-display">
-      <header className="sticky top-0 z-50 bg-white/80 dark:bg-background-dark/80 backdrop-blur-md border-b border-primary/10 px-4 py-4 flex items-center justify-between">
+    <div className="flex min-h-screen flex-col bg-background-light font-display text-slate-900 dark:bg-background-dark dark:text-slate-100">
+      <header className="sticky top-0 z-50 flex items-center justify-between border-b border-primary/10 bg-white/80 px-4 py-4 backdrop-blur-md dark:bg-background-dark/80">
         <button
-          className="flex items-center justify-center p-2 rounded-full hover:bg-primary/10 transition-colors"
+          className="flex items-center justify-center rounded-full p-2 transition-colors hover:bg-primary/10"
           type="button"
           onClick={() => navigate('menu')}
           aria-label="Voltar"
         >
           <MaterialIcon name="arrow_back" className="text-primary" />
         </button>
-        <h1 className="text-lg font-bold">Meus Pedidos</h1>
+        <h1 className="text-lg font-bold">Meus pedidos</h1>
         <button
-          className="flex items-center justify-center p-2 rounded-full hover:bg-primary/10 transition-colors"
+          className="flex items-center justify-center rounded-full p-2 transition-colors hover:bg-primary/10"
           type="button"
           onClick={toggle}
           aria-label="Alternar tema"
@@ -107,53 +107,59 @@ export function OrdersPage() {
         </button>
       </header>
 
-      <main className="max-w-3xl w-full mx-auto px-4 py-6 pb-28">
+      <main className="mx-auto w-full max-w-5xl px-4 py-6 pb-28 sm:px-6">
         {!user ? (
-          <div className="bg-white dark:bg-slate-800/50 p-6 rounded-xl border border-primary/5">
+          <div className="rounded-xl border border-primary/5 bg-white p-6 dark:bg-slate-800/50">
             <h2 className="text-xl font-extrabold">Entre para ver seus pedidos</h2>
             <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-              Você precisa estar autenticado para acompanhar o status e cancelar pedidos.
+              Voce precisa estar autenticado para acompanhar o status e cancelar
+              pedidos.
             </p>
             <button
-              className="mt-4 w-full bg-primary hover:bg-primary/90 text-white font-bold py-3 rounded-lg transition-colors"
+              className="mt-4 w-full rounded-lg bg-primary py-3 font-bold text-white transition-colors hover:bg-primary/90"
               type="button"
               onClick={() => navigate('login')}
             >
-              Ir para Login
+              Ir para o login
             </button>
           </div>
         ) : (
           <div className="space-y-4">
             {error ? (
-              <div className="flex items-start gap-2 text-red-500 text-xs bg-red-50 dark:bg-red-950/20 p-3 rounded-lg border border-red-100 dark:border-red-900/50">
+              <div className="flex items-start gap-2 rounded-lg border border-red-100 bg-red-50 p-3 text-xs text-red-500 dark:border-red-900/50 dark:bg-red-950/20">
                 <MaterialIcon name="error" className="text-base" />
                 <p>{error}</p>
               </div>
             ) : null}
 
             {loading ? (
-              <div className="bg-white dark:bg-slate-800/50 p-6 rounded-xl border border-primary/5 animate-pulse">
-                <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-1/3" />
-                <div className="mt-4 h-3 bg-slate-200 dark:bg-slate-700 rounded w-2/3" />
-                <div className="mt-2 h-3 bg-slate-200 dark:bg-slate-700 rounded w-1/2" />
+              <div className="rounded-xl border border-primary/5 bg-white p-6 animate-pulse dark:bg-slate-800/50">
+                <div className="h-4 w-1/3 rounded bg-slate-200 dark:bg-slate-700" />
+                <div className="mt-4 h-3 w-2/3 rounded bg-slate-200 dark:bg-slate-700" />
+                <div className="mt-2 h-3 w-1/2 rounded bg-slate-200 dark:bg-slate-700" />
               </div>
             ) : null}
 
             {!loading && orders.length === 0 ? (
-              <div className="bg-white dark:bg-slate-800/50 p-6 rounded-xl border border-primary/5 text-center">
-                <div className="size-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
-                  <MaterialIcon name="receipt_long" className="text-3xl text-primary" />
+              <div className="rounded-xl border border-primary/5 bg-white p-6 text-center dark:bg-slate-800/50">
+                <div className="mx-auto flex size-16 items-center justify-center rounded-full bg-primary/10">
+                  <MaterialIcon
+                    name="receipt_long"
+                    className="text-3xl text-primary"
+                  />
                 </div>
-                <h3 className="mt-4 text-lg font-extrabold">Nenhum pedido ainda</h3>
+                <h3 className="mt-4 text-lg font-extrabold">
+                  Nenhum pedido ainda
+                </h3>
                 <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-                  Volte ao cardápio e faça seu primeiro pedido.
+                  Volte ao cardapio e faca seu primeiro pedido.
                 </p>
                 <button
-                  className="mt-4 bg-primary text-white px-5 py-2.5 rounded-xl font-bold hover:brightness-110 transition-all shadow-lg shadow-primary/20"
+                  className="mt-4 rounded-xl bg-primary px-5 py-2.5 font-bold text-white shadow-lg shadow-primary/20 transition-all hover:brightness-110"
                   type="button"
                   onClick={() => navigate('menu')}
                 >
-                  Ver cardápio
+                  Ver cardapio
                 </button>
               </div>
             ) : null}
@@ -168,21 +174,21 @@ export function OrdersPage() {
                     return (
                       <div
                         key={o.id}
-                        className="bg-white dark:bg-slate-800/50 p-4 rounded-xl border border-primary/5"
+                        className="rounded-xl border border-primary/5 bg-white p-4 dark:bg-slate-800/50"
                       >
                         <div className="flex items-start justify-between gap-4">
                           <div>
                             <p className="text-xs text-slate-500 dark:text-slate-400">
                               Pedido #{o.id.slice(0, 8)}
                             </p>
-                            <p className="text-lg font-extrabold mt-1">
+                            <p className="mt-1 text-lg font-extrabold">
                               {statusLabel(o.status)}
                             </p>
-                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
                               {new Date(o.createdAt).toLocaleString('pt-BR')}
                             </p>
                           </div>
-                          <span className="px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold">
+                          <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-bold text-primary">
                             {o.status}
                           </span>
                         </div>
@@ -203,14 +209,14 @@ export function OrdersPage() {
                         <div className="mt-4 flex gap-2">
                           <button
                             type="button"
-                            className="flex-1 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-bold hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+                            className="flex-1 rounded-lg border border-slate-200 bg-white py-2 text-sm font-bold transition-colors hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700"
                             onClick={() => navigate('menu')}
                           >
                             Pedir novamente
                           </button>
                           <button
                             type="button"
-                            className="flex-1 py-2 rounded-lg bg-rose-500/10 text-rose-600 text-sm font-bold hover:bg-rose-500/20 transition-colors disabled:opacity-60"
+                            className="flex-1 rounded-lg bg-rose-500/10 py-2 text-sm font-bold text-rose-600 transition-colors hover:bg-rose-500/20 disabled:opacity-60"
                             disabled={!cancellable || busyId === o.id}
                             onClick={() => cancelOrder(o.id)}
                           >
@@ -225,20 +231,26 @@ export function OrdersPage() {
         )}
       </main>
 
-      <nav className="fixed bottom-0 left-0 right-0 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 pb-safe-area-inset-bottom">
-        <div className="flex justify-around items-center h-16 max-w-lg mx-auto">
+      <nav className="fixed bottom-0 left-0 right-0 border-t border-slate-200 bg-white pb-safe-area-inset-bottom dark:border-slate-800 dark:bg-slate-900">
+        <div className="mx-auto flex h-16 max-w-lg items-center justify-around">
           <a
             className="flex flex-col items-center gap-0.5 text-slate-400 dark:text-slate-500"
             href="#/menu"
           >
             <MaterialIcon name="home" />
-            <span className="text-[10px] font-medium">Início</span>
+            <span className="text-[10px] font-medium">Inicio</span>
           </a>
-          <a className="flex flex-col items-center gap-0.5 text-slate-400 dark:text-slate-500" href="#/menu">
+          <a
+            className="flex flex-col items-center gap-0.5 text-slate-400 dark:text-slate-500"
+            href="#/menu"
+          >
             <MaterialIcon name="restaurant_menu" />
-            <span className="text-[10px] font-medium">Cardápio</span>
+            <span className="text-[10px] font-medium">Cardapio</span>
           </a>
-          <a className="flex flex-col items-center gap-0.5 text-primary" href="#/orders">
+          <a
+            className="flex flex-col items-center gap-0.5 text-primary"
+            href="#/orders"
+          >
             <MaterialIcon name="receipt_long" fill />
             <span className="text-[10px] font-bold">Pedidos</span>
           </a>
@@ -254,4 +266,3 @@ export function OrdersPage() {
     </div>
   );
 }
-
