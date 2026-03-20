@@ -204,32 +204,52 @@ export async function completeByMotoboy(input: {
 
 export async function listAvailableOrdersEnriched(): Promise<EnrichedOrder[]> {
   const pool = getPgPool();
+  const memFallback = async () => {
+    const orders = await repo().listAvailableForMotoboy();
+    return orders.map((o) => ({
+      ...o,
+      lines: o.lines.map((l) => ({ ...l, name: l.id })),
+      customerPhone: null,
+    }));
+  };
+
   if (pool) {
-    const pgRepo = new PgOrdersRepo(pool);
-    return pgRepo.listAvailableForMotoboyEnriched();
+    try {
+      const pgRepo = new PgOrdersRepo(pool);
+      return await pgRepo.listAvailableForMotoboyEnriched();
+    } catch (err) {
+      if (isPgUnhealthyError(err) && env.NODE_ENV !== 'production') {
+        return await memFallback();
+      }
+      throw err;
+    }
   }
-  // In-memory fallback: convert basic orders to enriched format
-  const orders = await repo().listAvailableForMotoboy();
-  return orders.map((o) => ({
-    ...o,
-    lines: o.lines.map((l) => ({ ...l, name: l.id })),
-    customerPhone: null,
-  }));
+  return await memFallback();
 }
 
 export async function listOrdersForMotoboyEnriched(
   motoboyId: string,
 ): Promise<EnrichedOrder[]> {
   const pool = getPgPool();
+  const memFallback = async () => {
+    const orders = await repo().listByMotoboy(motoboyId);
+    return orders.map((o) => ({
+      ...o,
+      lines: o.lines.map((l) => ({ ...l, name: l.id })),
+      customerPhone: null,
+    }));
+  };
+
   if (pool) {
-    const pgRepo = new PgOrdersRepo(pool);
-    return pgRepo.listByMotoboyEnriched(motoboyId);
+    try {
+      const pgRepo = new PgOrdersRepo(pool);
+      return await pgRepo.listByMotoboyEnriched(motoboyId);
+    } catch (err) {
+      if (isPgUnhealthyError(err) && env.NODE_ENV !== 'production') {
+        return await memFallback();
+      }
+      throw err;
+    }
   }
-  // In-memory fallback
-  const orders = await repo().listByMotoboy(motoboyId);
-  return orders.map((o) => ({
-    ...o,
-    lines: o.lines.map((l) => ({ ...l, name: l.id })),
-    customerPhone: null,
-  }));
+  return await memFallback();
 }

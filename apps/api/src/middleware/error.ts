@@ -1,4 +1,4 @@
-﻿import type { ErrorRequestHandler, RequestHandler } from 'express';
+import type { ErrorRequestHandler, RequestHandler } from 'express';
 import { env } from '../config/env.js';
 
 export class AppError extends Error {
@@ -26,7 +26,18 @@ export function errorHandler(): ErrorRequestHandler {
     const code = err instanceof AppError ? err.code : 'INTERNAL';
 
     // Log full details server-side, but keep client responses minimal.
-    req.log?.error({ err, code, status }, 'request_error');
+    req.log?.error(
+      {
+        err,
+        code,
+        status,
+        method: req.method,
+        url: req.url,
+        userId: req.auth?.userId,
+        requestId: req.id,
+      },
+      'request_error',
+    );
 
     const message =
       env.NODE_ENV === 'production' && status === 500

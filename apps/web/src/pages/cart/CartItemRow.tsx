@@ -8,7 +8,7 @@ interface CartItemRowProps {
     name: string;
     priceCents: number;
     qty: number;
-    imageUrl?: string;
+    imageUrl?: string | undefined;
   };
   onUpdateQty: (id: string, delta: number) => void;
   onRemove: (id: string) => void;

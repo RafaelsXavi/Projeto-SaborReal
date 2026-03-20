@@ -147,7 +147,7 @@ export const login: RequestHandler = async (req, res, next) => {
         accessTokenCookieOptions(),
       );
       res.cookie(env.CSRF_COOKIE_NAME, csrfToken, csrfCookieOptions());
-      return res.json({ ok: true, user: sessionUser });
+      return res.json({ ok: true, user: sessionUser, csrfToken });
     }
   }
 
@@ -193,6 +193,7 @@ export const login: RequestHandler = async (req, res, next) => {
     res.json({
       ok: true,
       user: sessionUser,
+      csrfToken,
       refreshTokenId:
         env.NODE_ENV === 'production' ? undefined : refreshRecord.id,
     });
@@ -266,7 +267,7 @@ export const refresh: RequestHandler = async (req, res, next) => {
     );
     res.cookie(env.CSRF_COOKIE_NAME, csrfToken, csrfCookieOptions());
 
-    res.json({ ok: true, user: sessionUser });
+    res.json({ ok: true, user: sessionUser, csrfToken });
   } catch (err) {
     if (err instanceof Error && err.message === 'DATABASE_NOT_CONFIGURED') {
       return next(new AppError('DATABASE_NOT_CONFIGURED', 503));
@@ -301,5 +302,13 @@ export const logout: RequestHandler = async (req, res, next) => {
 
 export const session: RequestHandler = (req, res) => {
   if (!req.auth) return res.json({ authenticated: false });
-  res.json({ authenticated: true, user: req.auth });
+  const existing =
+    typeof req.cookies?.[env.CSRF_COOKIE_NAME] === 'string'
+      ? (req.cookies[env.CSRF_COOKIE_NAME] as string)
+      : null;
+  const csrfToken = existing ?? newCsrfToken();
+  if (!existing) {
+    res.cookie(env.CSRF_COOKIE_NAME, csrfToken, csrfCookieOptions());
+  }
+  res.json({ authenticated: true, user: req.auth, csrfToken });
 };

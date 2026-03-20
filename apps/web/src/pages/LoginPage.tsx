@@ -93,11 +93,7 @@ export function LoginPage() {
         <div className="mx-auto grid w-full max-w-6xl flex-1 gap-8 px-4 pb-8 pt-2 lg:grid-cols-[minmax(0,1fr)_minmax(360px,520px)] lg:items-center lg:px-8">
           <div className="order-2 lg:order-1">
             <div
-              className="flex min-h-[240px] w-full flex-col justify-end overflow-hidden rounded-[2rem] bg-primary/10 bg-cover bg-center bg-no-repeat sm:min-h-[320px] lg:min-h-[560px]"
-              style={{
-                backgroundImage:
-                  'url("https://lh3.googleusercontent.com/aida-public/AB6AXuAzh9XYGDKcxe8f4C2Xcqf2872mynJjwQ0ndN5hOH7Nj69qYRUYxJeJV-CER9RXs3lWkZnzLUTZ1gmPicaFvHQ649AjePVVAlICes48ptbaX9A8W47qZCQ9geJX8mf_lu5a3GgoHdMqZyGsxe8e5OaU3Lwcqopa57lvBeXrLX2BzZo1H6K4_KdQEPGCiC7202tMHiqtXCJdewCxYNWVaIV4wcMMWJK0OLGe4aV0s5Q2dwBlgAZLG63rAYRQwkpK4CGKvrIBY_04LDKq")',
-              }}
+              className="login-hero flex min-h-[240px] w-full flex-col justify-end overflow-hidden rounded-[2rem] bg-primary/10 bg-cover bg-center bg-no-repeat sm:min-h-[320px] lg:min-h-[560px]"
             />
           </div>
 

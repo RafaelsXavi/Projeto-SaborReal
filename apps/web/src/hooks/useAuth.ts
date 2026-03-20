@@ -1,16 +1,19 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { apiFetch } from '../api';
+import { apiFetch, setCsrfToken } from '../api';
 
 export type Role = 'customer' | 'admin' | 'motoboy';
 export type AuthUser = { userId: string; role: Role };
 
 type SessionResponse =
   | { authenticated: false }
-  | { authenticated: true; user: AuthUser };
+  | { authenticated: true; user: AuthUser; csrfToken?: string };
 
 async function fetchSession(): Promise<AuthUser | null> {
   const res = await apiFetch('/v1/auth/session');
   const body = (await res.json()) as SessionResponse;
+  if (body.authenticated && typeof body.csrfToken === 'string') {
+    setCsrfToken(body.csrfToken);
+  }
   return body.authenticated ? body.user : null;
 }
 
@@ -25,10 +28,12 @@ export function useAuth() {
 
   const loginMutation = useMutation({
     mutationFn: async (input: { identifier: string; password: string }) => {
-      await apiFetch('/v1/auth/login', {
+      const res = await apiFetch('/v1/auth/login', {
         method: 'POST',
         body: JSON.stringify(input),
       });
+      const body = (await res.json()) as { ok?: boolean; csrfToken?: string };
+      if (typeof body.csrfToken === 'string') setCsrfToken(body.csrfToken);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['session'] });
@@ -53,6 +58,7 @@ export function useAuth() {
     },
     onSuccess: () => {
       queryClient.setQueryData(['session'], null);
+      setCsrfToken(null);
     },
   });
 

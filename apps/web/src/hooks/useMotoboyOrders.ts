@@ -1,15 +1,8 @@
+import type { EnrichedOrder } from '@saborreal/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiFetch } from '../api';
-import type { OrderStatus } from './useAdminOrders';
 
-export type MotoboyOrder = {
-  id: string;
-  userId: string;
-  status: OrderStatus;
-  lines: { id: string; qty: number; name: string }[];
-  createdAt: string;
-  customerPhone: string | null;
-};
+export type MotoboyOrder = EnrichedOrder;
 
 async function fetchAvailableOrders(): Promise<MotoboyOrder[]> {
   const res = await apiFetch('/v1/motoboy/available');

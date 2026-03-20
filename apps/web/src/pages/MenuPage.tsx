@@ -97,9 +97,9 @@ export function MenuPage() {
                   <div className="flex gap-4">
                     <Skeleton className="size-24 rounded-2xl" />
                     <div className="flex-1 space-y-2">
-                      <Skeleton variant="text" width="60%" height={24} />
-                      <Skeleton variant="text" width="40%" height={16} />
-                      <Skeleton variant="text" width="30%" height={20} />
+                      <Skeleton variant="text" className="w-[60%] h-6" />
+                      <Skeleton variant="text" className="w-[40%] h-4" />
+                      <Skeleton variant="text" className="w-[30%] h-5" />
                     </div>
                   </div>
                   <Skeleton className="mt-4 h-10 w-full rounded-2xl" />

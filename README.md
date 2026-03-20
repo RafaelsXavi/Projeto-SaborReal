@@ -2,6 +2,13 @@
 
 Monorepo (workspaces) com uma API Node.js/TypeScript focada em isolamento de superfícies (cliente/admin/motoboy) e segurança por padrão.
 
+## Deploy (Render) - caminho recomendado (MVP)
+
+Este repo já vem com `render.yaml` (Blueprint). Para executar sem pular etapa, siga:
+- Runbook: `docs/MVP_RUNBOOK.md`
+- Políticas/variáveis: `docs/MVP_DEPLOY_RENDER.md`
+- Template de env: `docs/RENDER_ENV_TEMPLATE.md`
+
 ## Estrutura
 
 - `apps/api`: API Express (v1) com middlewares de segurança, CORS allowlist, rate limit e RBAC por rotas.
@@ -26,6 +33,7 @@ Ou ajuste a Execution Policy do PowerShell (ex.: `RemoteSigned` no escopo do usu
 - Copie o arquivo de exemplo:
   - `cp .env.example .env`
 - Ajuste `CORS_ORIGINS` com uma lista separada por vírgula (ex.: `http://localhost:5173`).
+- Segurança: nunca faça commit de `.env` (use `.env.example`).
 
 ## Comandos (raiz do repo)
 
@@ -37,6 +45,14 @@ Ou ajuste a Execution Policy do PowerShell (ex.: `RemoteSigned` no escopo do usu
 - Migrations (Postgres): `npm run db:migrate`
 - Seed do cardápio real (Postgres): `npm run seed:catalog`
 - Suite de testes (API): `npm -w @saborreal/api run test:all`
+
+## Gate de release (antes de subir)
+
+Rode e só prossiga se tudo passar:
+- `npm run lint`
+- `npm run typecheck`
+- `npm test`
+- `npm -w @saborreal/web run build`
 
 ## Docker (Postgres + Mongo + API)
 
@@ -52,6 +68,9 @@ Ou ajuste a Execution Policy do PowerShell (ex.: `RemoteSigned` no escopo do usu
 - `GET /v1/catalog`: retorna `{ ok, items, categories }` (cardápio via Postgres; fallback para seed em dev se migrations não existirem).
 - `POST /v1/orders`: exige role `customer`, header `Idempotency-Key` e CSRF quando usando cookie auth.
 - `GET /v1/admin/orders`: exige role `admin` (retorna `401` sem auth).
+- `POST /v1/admin/catalog`: cria produto (role `admin`).
+- `PATCH /v1/admin/catalog/:id`: atualiza produto (role `admin`).
+- `DELETE /v1/admin/catalog/:id`: remove produto (role `admin`).
 - `POST /v1/auth/register`: cria conta `customer` (email/telefone + senha).
 - `POST /v1/auth/login`: cria sessão (cookies) e emite refresh-token com rotação.
 - `POST /v1/auth/refresh`: rotaciona refresh-token e renova access.
@@ -61,6 +80,7 @@ Ou ajuste a Execution Policy do PowerShell (ex.: `RemoteSigned` no escopo do usu
 ## Segurança (o que já está implementado)
 
 - `helmet` habilitado e `X-Powered-By` desabilitado.
+- CSP (Content-Security-Policy) aplicada na API (Helmet) e no Web (meta tag) para reduzir risco de XSS.
 - CORS por allowlist (`CORS_ORIGINS`), bloqueando origens não permitidas.
 - Rate limit global (por IP).
 - `X-Request-Id` em requests/respostas e logs estruturados com `pino-http`.
@@ -97,28 +117,23 @@ Se no Windows o driver do Docker/WSL deixar a conexao `pg` instavel via `127.0.0
 ## Checklist Para Finalizar E Subir (MVP)
 
 - Garantir que nada esteja ocupando a porta `3001` antes de subir o Docker (senão o container da API nao responde).
-- Definir variaveis de producao no `.env` (ou no provedor):
-- `JWT_SECRET` forte (32+ bytes aleatorios).
-- `DEV_AUTH_ENABLED=false` (nao permitir criar admin/courier por endpoint de dev em producao).
-- `CORS_ORIGINS` com o(s) dominio(s) do frontend.
-- `TRUST_PROXY=true` se estiver atras de proxy/load balancer.
-- `DATABASE_URL` e `MONGO_URI` apontando para os servicos corretos do ambiente.
-- `PG_SSL=true` apenas se o Postgres do provedor exigir TLS; em Docker local normalmente fica `false`.
-- Rodar `npm run db:migrate` no ambiente-alvo.
-- Rodar `npm run seed:catalog` no ambiente-alvo (uma vez).
+- Definir variáveis de produção no provedor (Render recomendado):
+  - `JWT_SECRET` forte (32+ bytes aleatórios).
+  - `DEV_AUTH_ENABLED=false` sempre.
+  - `CORS_ORIGINS` com o domínio do frontend (`https://...onrender.com`).
+  - `TRUST_PROXY=true` (Render/proxy).
+  - `DATABASE_URL` do Postgres.
+  - `MONGO_URI` é opcional no MVP: se não usar Mongo, não setar.
+  - `PG_SSL=true` em produção (padrão em cloud).
+- Rodar migrations/seed/bootstrap no ambiente-alvo (ver `docs/MVP_RUNBOOK.md`).
 - Validar healthchecks:
-- `GET /healthz` retorna `200`.
-- `GET /healthz/readyz` retorna `200` (Postgres/Mongo ok).
-- Validar seed real:
-- `GET /v1/catalog` retorna `items` com ~49 itens e `categories` com ~8 categorias.
-- Smoke tests:
-- `npm test` (smoke de seguranca).
-- `SMOKE_WITH_DB=true npm run test:db` (fluxo real com Postgres).
-- Validacao manual end-to-end (web):
-- Criar usuario `customer`, fazer pedido em `#/menu` -> `#/cart`.
-- Acessar `#/admin` (admin) e avancar status do pedido.
-- Acessar `#/courier` (motoboy) e aceitar/concluir entrega.
-- Verificar `#/orders` atualizando status.
+  - `GET /healthz` retorna `200`.
+  - `GET /healthz/readyz` retorna `200` (Postgres ok; Mongo só se configurado).
+- Validação manual end-to-end (web):
+  - Criar usuário `customer`, fazer pedido em `#/menu` -> `#/cart`.
+  - Acessar `#/admin` (admin) e avançar status do pedido.
+  - Acessar `#/motoboy` (motoboy) e aceitar/concluir entrega.
+  - Verificar `#/orders` atualizando status.
 
 ## Frontend (web)
 
@@ -136,8 +151,8 @@ O frontend `apps/web` contém um protótipo de telas baseado nos HTMLs de refer�
 - `#/cart` (Carrinho)
 - `#/orders` (Meus Pedidos)
 - `#/login` (Login/Cadastro)
-- `#/courier` (Entregas/Motoboy)
+- `#/motoboy` (Entregas/Motoboy)
 - `#/admin` (Admin/Painel de Pedidos)
 
-Obs: por enquanto o estilo usa Tailwind via CDN (bom para protótipo). Quando a UI estiver fechada, o ideal é migrar para Tailwind no build do Vite.
+Tailwind já foi migrado para build-time (sem CDN) em `apps/web` (PostCSS + Tailwind config).
 

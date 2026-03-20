@@ -1,21 +1,9 @@
+import { createMotoboySchema, updateMotoboySchema } from '@saborreal/shared';
 import type { RequestHandler } from 'express';
-import { z } from 'zod';
 import { AppError } from '../../middleware/error.js';
 import { requirePgPool } from './auth.pg.js';
 import { hashPassword } from './password.js';
 import { PgUsersRepo } from './users.repo.js';
-
-const createMotoboySchema = z.object({
-  identifier: z.string().min(3).max(200),
-  password: z.string().min(8).max(200),
-  phone: z.string().max(30).optional(),
-});
-
-const updateMotoboySchema = z.object({
-  email: z.string().email().max(200).optional(),
-  phone: z.string().max(30).optional(),
-  password: z.string().min(8).max(200).optional(),
-});
 
 function parseIdentifier(raw: string) {
   const v = raw.trim();

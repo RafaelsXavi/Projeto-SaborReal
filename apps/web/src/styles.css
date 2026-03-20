@@ -1,3 +1,10 @@
+/* biome-ignore lint/suspicious/noUnknownAtRules: Tailwind directives are processed at build time. */
+@tailwind base;
+/* biome-ignore lint/suspicious/noUnknownAtRules: Tailwind directives are processed at build time. */
+@tailwind components;
+/* biome-ignore lint/suspicious/noUnknownAtRules: Tailwind directives are processed at build time. */
+@tailwind utilities;
+
 :root {
   color-scheme: light;
 }
@@ -19,6 +26,8 @@ body,
 body {
   background: #f8f6f5;
   color: #0f172a;
+  font-family: "Plus Jakarta Sans", sans-serif;
+  min-height: max(884px, 100dvh);
 }
 
 * {
@@ -38,6 +47,22 @@ input,
 select,
 textarea {
   font: inherit;
+}
+
+.material-symbols-outlined {
+  font-variation-settings:
+    "FILL" 0,
+    "wght" 400,
+    "GRAD" 0,
+    "opsz" 24;
+}
+
+.material-symbols-fill {
+  font-variation-settings:
+    "FILL" 1,
+    "wght" 400,
+    "GRAD" 0,
+    "opsz" 24;
 }
 
 /* Helpers usados pelos HTMLs de referencia */
@@ -88,4 +113,8 @@ textarea {
     rgba(30, 41, 59, 0.4) 75%
   );
   background-size: 200% 100%;
+}
+
+.login-hero {
+  background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuAzh9XYGDKcxe8f4C2Xcqf2872mynJjwQ0ndN5hOH7Nj69qYRUYxJeJV-CER9RXs3lWkZnzLUTZ1gmPicaFvHQ649AjePVVAlICes48ptbaX9A8W47qZCQ9geJX8mf_lu5a3GgoHdMqZyGsxe8e5OaU3Lwcqopa57lvBeXrLX2BzZo1H6K4_KdQEPGCiC7202tMHiqtXCJdewCxYNWVaIV4wcMMWJK0OLGe4aV0s5Q2dwBlgAZLG63rAYRQwkpK4CGKvrIBY_04LDKq");
 }

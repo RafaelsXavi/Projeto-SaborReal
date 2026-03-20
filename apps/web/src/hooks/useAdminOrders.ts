@@ -1,22 +1,9 @@
+import type { Order, OrderStatus } from '@saborreal/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiFetch } from '../api';
 
-export type OrderStatus =
-  | 'PLACED'
-  | 'PREPARING'
-  | 'READY_FOR_PICKUP'
-  | 'OUT_FOR_DELIVERY'
-  | 'COMPLETED'
-  | 'CANCELLED';
-
-export type ApiOrder = {
-  id: string;
-  userId: string;
-  status: OrderStatus;
-  lines: { id: string; qty: number }[];
-  createdAt: string;
-  motoboyId?: string;
-};
+export type ApiOrder = Order;
+export type { OrderStatus };
 
 async function fetchAdminOrders(): Promise<ApiOrder[]> {
   const res = await apiFetch('/v1/admin/orders');

@@ -1,23 +1,9 @@
+import type { CatalogCategory, CatalogItem } from '@saborreal/shared';
 import { useQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
 import { apiFetch, userFriendlyError } from '../api';
 
-export type CatalogCategory = {
-  id: string;
-  name: string;
-  sortOrder?: number;
-};
-
-export type CatalogItem = {
-  id: string;
-  name: string;
-  priceCents: number;
-  description?: string;
-  categoryId?: string;
-  categoryName?: string;
-  imageUrl?: string;
-  available?: boolean;
-};
+export type { CatalogItem, CatalogCategory };
 
 type CatalogResponse = { items: unknown; categories?: unknown };
 

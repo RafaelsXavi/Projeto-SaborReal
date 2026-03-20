@@ -38,7 +38,7 @@ export function AuthPanel() {
 
   return (
     <div className="notice">
-      <div className="row" style={{ justifyContent: 'space-between' }}>
+      <div className="row flex items-center justify-between gap-3">
         <div>
           <span className="small">Sessao:</span>{' '}
           <span className="badge">{badge}</span>
@@ -57,8 +57,8 @@ export function AuthPanel() {
       </div>
 
       {!user ? (
-        <div style={{ marginTop: 8 }}>
-          <div className="row" style={{ justifyContent: 'flex-start' }}>
+        <div className="mt-2">
+          <div className="row flex items-center justify-start gap-2">
             <button
               className="btn"
               type="button"
@@ -77,7 +77,7 @@ export function AuthPanel() {
             </button>
           </div>
 
-          <div className="row" style={{ marginTop: 8 }}>
+          <div className="row mt-2">
             <input
               value={identifier}
               onChange={(e) => setIdentifier(e.target.value)}
@@ -85,7 +85,7 @@ export function AuthPanel() {
               placeholder="e-mail ou telefone"
             />
           </div>
-          <div className="row" style={{ marginTop: 8 }}>
+          <div className="row mt-2">
             <input
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -96,10 +96,9 @@ export function AuthPanel() {
           </div>
 
           <button
-            className="btn btnPrimary"
+            className="btn btnPrimary mt-2.5 w-full"
             type="button"
             onClick={onSubmit}
-            style={{ width: '100%', marginTop: 10 }}
           >
             {mode === 'login' ? 'Entrar' : 'Criar conta'}
           </button>
@@ -107,7 +106,7 @@ export function AuthPanel() {
       ) : null}
 
       {error ? (
-        <div style={{ marginTop: 8 }}>
+        <div className="mt-2">
           <div className="small">Erro:</div>
           <div className="code">{error}</div>
         </div>

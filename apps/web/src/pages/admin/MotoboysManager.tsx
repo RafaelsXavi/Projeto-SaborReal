@@ -1,14 +1,8 @@
+import type { User as Motoboy } from '@saborreal/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { memo, useCallback, useState } from 'react';
 import { apiFetch, userFriendlyError } from '../../api';
 import { MaterialIcon } from '../../components/MaterialIcon';
-
-type Motoboy = {
-  id: string;
-  email: string | null;
-  phone: string | null;
-  role: string;
-};
 
 async function fetchMotoboys(): Promise<Motoboy[]> {
   const res = await apiFetch('/v1/admin/motoboys');

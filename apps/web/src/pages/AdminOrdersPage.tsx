@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useState } from 'react';
+import { ErrorBoundary } from '../components/ErrorBoundary';
 import {
   type ApiOrder,
   type OrderStatus,
@@ -6,13 +7,14 @@ import {
 } from '../hooks/useAdminOrders';
 import { useCatalog } from '../hooks/useCatalog';
 import { MotoboysManager } from './admin/MotoboysManager';
+import { ProductsManager } from './admin/ProductsManager';
 import { AdminHeader } from './admin-orders/AdminHeader';
 import { OrderDetail } from './admin-orders/OrderDetail';
 import { OrderFilters } from './admin-orders/OrderFilters';
 import { OrderList } from './admin-orders/OrderList';
 
 type FilterType = 'all' | OrderStatus;
-type AdminTab = 'orders' | 'motoboys';
+type AdminTab = 'orders' | 'motoboys' | 'produtos';
 
 export function AdminOrdersPage() {
   const { catalog, loading: loadingCatalog } = useCatalog();
@@ -120,10 +122,21 @@ export function AdminOrdersPage() {
           >
             Motoboys
           </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('produtos')}
+            className={`flex-1 rounded-lg px-4 py-2.5 text-sm font-bold transition-all ${
+              activeTab === 'produtos'
+                ? 'bg-white text-primary shadow-sm dark:bg-slate-700'
+                : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'
+            }`}
+          >
+            Produtos
+          </button>
         </div>
 
         {activeTab === 'orders' ? (
-          <>
+          <ErrorBoundary>
             <OrderFilters
               query={query}
               onQueryChange={handleSetQuery}
@@ -165,9 +178,15 @@ export function AdminOrdersPage() {
                 </div>
               </div>
             </div>
-          </>
+          </ErrorBoundary>
+        ) : activeTab === 'motoboys' ? (
+          <ErrorBoundary>
+            <MotoboysManager />
+          </ErrorBoundary>
         ) : (
-          <MotoboysManager />
+          <ErrorBoundary>
+            <ProductsManager />
+          </ErrorBoundary>
         )}
       </main>
     </div>

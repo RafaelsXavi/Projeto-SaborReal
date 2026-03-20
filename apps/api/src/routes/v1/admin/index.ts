@@ -10,6 +10,11 @@ import {
   updateMotoboy,
 } from '../../../modules/auth/motoboys.admin.controller.js';
 import {
+  adminCreateCatalogItem,
+  adminDeleteCatalogItem,
+  adminUpdateCatalogItem,
+} from '../../../modules/catalog/catalog.admin.controller.js';
+import {
   getJob,
   listJobs,
 } from '../../../modules/jobs/jobs.admin.controller.js';
@@ -48,3 +53,8 @@ adminRouter.get('/motoboys', listMotoboys);
 adminRouter.post('/motoboys', createMotoboy);
 adminRouter.put('/motoboys/:id', updateMotoboy);
 adminRouter.delete('/motoboys/:id', deleteMotoboy);
+
+// Catalog CRUD
+adminRouter.post('/catalog', adminCreateCatalogItem);
+adminRouter.patch('/catalog/:id', adminUpdateCatalogItem);
+adminRouter.delete('/catalog/:id', adminDeleteCatalogItem);

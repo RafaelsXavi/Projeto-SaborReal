@@ -1,79 +1,40 @@
+import type { CatalogItem } from '@saborreal/shared';
 import { getPgPool } from '../../db/postgres.js';
+import { PgCatalogRepo } from './catalog.pg.repo.js';
 import { seedCatalog } from './catalog.seed.js';
 import type { CatalogResponse } from './catalog.types.js';
 
 const CATALOG_CACHE_TTL_MS = 30_000;
 let catalogCache: { at: number; value: CatalogResponse } | null = null;
 
-export async function listCatalog(): Promise<CatalogResponse> {
+function getRepo(): PgCatalogRepo | null {
   const pool = getPgPool();
-  if (!pool) return seedCatalog;
+  return pool ? new PgCatalogRepo(pool) : null;
+}
+
+function invalidateCache() {
+  catalogCache = null;
+}
+
+export async function listCatalog(): Promise<CatalogResponse> {
+  const repo = getRepo();
+  if (!repo) return seedCatalog;
 
   const now = Date.now();
   if (catalogCache && now - catalogCache.at < CATALOG_CACHE_TTL_MS) {
     return catalogCache.value;
   }
 
-  // If migrations weren't applied, fall back to seed in dev.
   try {
-    const [categoriesRes, itemsRes] = await Promise.all([
-      pool.query<{
-        id: string;
-        name: string;
-        sort_order: number;
-      }>(
-        `select id, name, sort_order
-         from catalog_categories
-         order by sort_order asc, name asc`,
-      ),
-      pool.query<{
-        id: string;
-        name: string;
-        description: string;
-        price_cents: number;
-        category_id: string;
-        category_name: string;
-        image_url: string;
-        available: boolean;
-        sort_order: number;
-      }>(
-        `select
-           i.id,
-           i.name,
-           i.description,
-           i.price_cents,
-           i.category_id,
-           c.name as category_name,
-           i.image_url,
-           i.available,
-           c.sort_order
-         from catalog_items i
-         join catalog_categories c on c.id = i.category_id
-         order by c.sort_order asc, i.name asc`,
-      ),
+    const [categories, items] = await Promise.all([
+      repo.listCategories(),
+      repo.listItems(),
     ]);
 
-    const value: CatalogResponse = {
-      categories: categoriesRes.rows.map((r) => ({
-        id: r.id,
-        name: r.name,
-        sortOrder: r.sort_order,
-      })),
-      items: itemsRes.rows.map((r) => ({
-        id: r.id,
-        name: r.name,
-        description: r.description,
-        priceCents: r.price_cents,
-        categoryId: r.category_id,
-        categoryName: r.category_name,
-        imageUrl: r.image_url,
-        available: r.available,
-      })),
-    };
+    const value: CatalogResponse = { categories, items };
     catalogCache = { at: now, value };
     return value;
   } catch (err) {
-    // Postgres "undefined_table" is 42P01.
     const code = (err as { code?: unknown } | null)?.code;
     const errno = (err as { errno?: unknown } | null)?.errno;
     if (code === '42P01' || code === 'ECONNREFUSED' || errno === -4078) {
@@ -81,4 +42,32 @@ export async function listCatalog(): Promise<CatalogResponse> {
     }
     throw err;
   }
+}
+
+export async function adminCreateItem(
+  input: Omit<CatalogItem, 'id' | 'categoryName'>,
+) {
+  const repo = getRepo();
+  if (!repo) throw new Error('DATABASE_NOT_CONFIGURED');
+  const item = await repo.createItem(input);
+  invalidateCache();
+  return item;
+}
+
+export async function adminUpdateItem(
+  id: string,
+  input: Partial<Omit<CatalogItem, 'id' | 'categoryName'>>,
+) {
+  const repo = getRepo();
+  if (!repo) throw new Error('DATABASE_NOT_CONFIGURED');
+  const item = await repo.updateItem(id, input);
+  invalidateCache();
+  return item;
+}
+
+export async function adminDeleteItem(id: string) {
+  const repo = getRepo();
+  if (!repo) throw new Error('DATABASE_NOT_CONFIGURED');
+  await repo.deleteItem(id);
+  invalidateCache();
 }

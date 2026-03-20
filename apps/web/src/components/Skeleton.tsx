@@ -1,37 +1,62 @@
 import type React from 'react';
+import { useMemo } from 'react';
 
 interface SkeletonProps {
   className?: string;
   variant?: 'text' | 'rect' | 'circle';
-  width?: string | number;
-  height?: string | number;
-  style?: React.CSSProperties;
 }
 
 export const Skeleton: React.FC<SkeletonProps> = ({
   className = '',
   variant = 'rect',
-  width,
-  height,
-  style,
 }) => {
-  const baseStyles: React.CSSProperties = {
-    width,
-    height,
-    ...style,
-  };
-
   const variantClasses = {
-    text: 'rounded-md h-4 w-full mb-2',
-    rect: 'rounded-2xl',
+    text: 'h-4 w-full rounded',
+    rect: 'rounded-xl',
     circle: 'rounded-full',
   };
 
   return (
     <div
-      className={`skeleton ${variantClasses[variant]} ${className}`}
-      style={baseStyles}
+      className={`animate-pulse bg-slate-200 dark:bg-slate-800 ${variantClasses[variant]} ${className}`}
       aria-hidden="true"
     />
+  );
+};
+
+export const CardSkeleton = () => (
+  <div className="rounded-2xl border border-primary/5 bg-white p-5 shadow-sm dark:bg-background-dark/40">
+    <div className="mb-4 flex items-center justify-between">
+      <div className="flex items-center gap-3">
+        <Skeleton className="h-10 w-10 sm:h-12 sm:w-12" variant="rect" />
+        <div className="space-y-2">
+          <Skeleton className="h-3 w-20" />
+          <Skeleton className="h-4 w-32" />
+        </div>
+      </div>
+      <Skeleton className="h-3 w-12" />
+    </div>
+    <div className="space-y-3">
+      <Skeleton className="h-20 w-full" variant="rect" />
+      <Skeleton className="h-10 w-full" variant="rect" />
+    </div>
+  </div>
+);
+
+export const ListSkeleton = ({ count = 3 }: { count?: number }) => {
+  const keys = useMemo(() => {
+    return Array.from({ length: count }).map(() =>
+      typeof crypto !== 'undefined' && 'randomUUID' in crypto
+        ? crypto.randomUUID()
+        : String(Math.random()),
+    );
+  }, [count]);
+
+  return (
+    <div className="space-y-4">
+      {keys.map((key) => (
+        <CardSkeleton key={key} />
+      ))}
+    </div>
   );
 };

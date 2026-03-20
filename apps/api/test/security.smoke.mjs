@@ -114,6 +114,53 @@ await run('RBAC: customer token is forbidden on admin surface', async () => {
   });
 });
 
+await run('RBAC: catalog CRUD requires admin', async () => {
+  await withServer(async (baseUrl) => {
+    const customerToken = accessTokenFor({
+      userId: crypto.randomUUID(),
+      role: 'customer',
+    });
+    const adminToken = accessTokenFor({
+      userId: crypto.randomUUID(),
+      role: 'admin',
+    });
+
+    const unauth = await fetch(`${baseUrl}/v1/admin/catalog`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({}),
+    });
+    assert.equal(unauth.status, 401);
+    const unauthBody = await unauth.json();
+    assert.equal(unauthBody.error?.code, 'UNAUTHENTICATED');
+
+    const forbidden = await fetch(`${baseUrl}/v1/admin/catalog`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${customerToken}`,
+      },
+      body: JSON.stringify({}),
+    });
+    assert.equal(forbidden.status, 403);
+    const forbiddenBody = await forbidden.json();
+    assert.equal(forbiddenBody.error?.code, 'FORBIDDEN');
+
+    // Use an invalid body so we can assert RBAC + route wiring without requiring Postgres.
+    const adminInvalid = await fetch(`${baseUrl}/v1/admin/catalog`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${adminToken}`,
+      },
+      body: JSON.stringify({}),
+    });
+    assert.equal(adminInvalid.status, 400);
+    const adminInvalidBody = await adminInvalid.json();
+    assert.equal(adminInvalidBody.error?.code, 'INVALID_INPUT');
+  });
+});
+
 await run('Idempotency: same key replays same order', async () => {
   await withServer(async (baseUrl) => {
     const accessToken = accessTokenFor({

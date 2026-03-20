@@ -18,6 +18,8 @@ export function userFriendlyError(value: unknown) {
     switch (value.code) {
       case 'DATABASE_NOT_CONFIGURED':
         return 'API sem banco configurado (Postgres). Rode as migrations e suba o Postgres.';
+      case 'DATABASE_UNAVAILABLE':
+        return 'Banco indisponivel no momento. Tente novamente em alguns instantes.';
       case 'INVALID_CREDENTIALS':
         return 'Credenciais invalidas.';
       case 'USER_ALREADY_EXISTS':
@@ -56,16 +58,25 @@ export function userFriendlyError(value: unknown) {
   return value instanceof Error ? value.message : String(value);
 }
 
-function readCookie(name: string) {
-  if (typeof document === 'undefined') return null;
-  const prefix = `${encodeURIComponent(name)}=`;
-  const parts = document.cookie.split(';');
-  for (const part of parts) {
-    const p = part.trim();
-    if (!p.startsWith(prefix)) continue;
-    return decodeURIComponent(p.slice(prefix.length));
+const CSRF_STORAGE_KEY = 'sr_csrf';
+let cachedCsrfToken: string | null = null;
+
+export function setCsrfToken(token: string | null) {
+  cachedCsrfToken = token;
+  if (typeof window === 'undefined') return;
+  if (!token) {
+    window.sessionStorage.removeItem(CSRF_STORAGE_KEY);
+    return;
   }
-  return null;
+  window.sessionStorage.setItem(CSRF_STORAGE_KEY, token);
+}
+
+export function getCsrfToken() {
+  if (cachedCsrfToken) return cachedCsrfToken;
+  if (typeof window === 'undefined') return null;
+  const token = window.sessionStorage.getItem(CSRF_STORAGE_KEY);
+  cachedCsrfToken = token;
+  return token;
 }
 
 export function apiBaseUrl() {
@@ -82,9 +93,9 @@ export async function apiFetch(
   const url = new URL(pathname, apiBaseUrl());
   const method = (init?.method ?? 'GET').toUpperCase();
   const unsafe = method !== 'GET' && method !== 'HEAD' && method !== 'OPTIONS';
-  const csrfToken = unsafe ? readCookie('sr_csrf') : null;
+  const csrfToken = unsafe ? getCsrfToken() : null;
 
-  const res = await fetch(url, {
+  const fetchOptions: RequestInit = {
     ...init,
     headers: {
       'Content-Type': 'application/json',
@@ -92,9 +103,29 @@ export async function apiFetch(
       ...(init?.headers ?? {}),
     },
     credentials: 'include',
-  });
+  };
 
-  if (res.ok) return res;
+  const MAX_RETRIES = 2;
+  let attempt = 0;
+  let res: Response;
+
+  while (true) {
+    res = await fetch(url, fetchOptions);
+    if (res.ok) return res;
+
+    // Retry only on GET requests for certain status codes (502, 503, 504)
+    if (
+      !unsafe &&
+      attempt < MAX_RETRIES &&
+      [502, 503, 504].includes(res.status)
+    ) {
+      attempt++;
+      const delay = 500 * Math.pow(2, attempt); // 1s, 2s
+      await new Promise((resolve) => setTimeout(resolve, delay));
+      continue;
+    }
+    break; // don't retry, let error logic handle it
+  }
 
   let body: ApiErrorBody | undefined;
   try {

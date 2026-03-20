@@ -8,7 +8,7 @@ services:
     name: saborreal-api
     env: docker
     dockerfilePath: ./apps/api/Dockerfile
-    repo: https://github.com/YOUR_USERNAME/projeto-saborreal  # UPDATE com seu repo
+    repo: https://github.com/RafaelsXavi/Projeto-SaborReal
     envVars:
       - key: NODE_ENV
         value: production
@@ -33,10 +33,11 @@ services:
   - type: web
     name: saborreal-web
     env: static
-    repo: https://github.com/YOUR_USERNAME/projeto-saborreal  # UPDATE com seu repo
-    rootDir: apps/web
+    repo: https://github.com/RafaelsXavi/Projeto-SaborReal
     envVars:
+      - key: NODE_VERSION
+        value: "22"
       - key: VITE_API_URL
         value: https://saborreal-api.onrender.com
-    buildCommand: npm ci && npm run build
-    publishPath: dist
+    buildCommand: npm ci && npm -w @saborreal/web run build
+    publishPath: apps/web/dist

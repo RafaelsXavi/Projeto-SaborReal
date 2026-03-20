@@ -1,54 +1,41 @@
-# Next Steps: Deploy to Render 🚀
+# Deploy to Render (MVP)
 
-## Local Status: ✅ Healthy
-```
-API: http://localhost:3001/healthz → OK
-DBs: /healthz/readyz → Connected
-Catalog: /v1/catalog → Loaded (seed success)
-Web: npm run dev:web → http://localhost:5173/#/menu (full flow works)
-```
+Este repo já vem com `render.yaml` (Blueprint).
 
-## 1. GitHub Repo (2min)
-```
-git init
-git add .
-git commit -m "SaborReal MVP - Docker/Render ready"
-# Create repo at github.com/YOUR/projeto-saborreal (public)
-git remote add origin https://github.com/YOUR/projeto-saborreal.git
-git branch -M main
-git push -u origin main
-```
+Para o passo-a-passo “sem pular etapa”, veja:
+- `docs/MVP_RUNBOOK.md`
+- `docs/MVP_DEPLOY_RENDER.md`
+- `docs/RENDER_ENV_TEMPLATE.md`
 
-## 2. Render.com Deploy (5min)
-1. **render.com** → Sign up (GitHub login)
-2. **New** → **Blueprint** → Connect GitHub repo → Select `projeto-saborreal`
-3. Auto-deploys: Postgres + API(Docker) + Web(Static apps/web)
-4. **Dashboard** → API service → Environment:
-   ```
-   JWT_SECRET=wf5GtTPC4emH/w77QPZOPY0X6OPVDtj0sQPJM144e2fBC/+tOO7cSzNMNjDy2okKvQqvIms/9PQhZ196kQ3XIg==
-   DATABASE_URL=postgresql://[from Postgres service]
-   MONGO_URI=  # Optional: Mongo Atlas free
-   CORS_ORIGINS=https://saborreal-web.onrender.com
-   TRUST_PROXY=true
-   DEV_AUTH_ENABLED=false
-   ```
-5. **Shell** (API service): `npm run db:migrate:prod`
-6. **Shell**: `npm run seed:catalog`
+## 1) GitHub (repo)
 
-## 3. Live URLs
-```
-API: https://saborreal-api.onrender.com/healthz
-Web: https://saborreal-web.onrender.com/#/menu
-Admin: #/admin | Courier: #/courier
-```
+Repo: `https://github.com/RafaelsXavi/Projeto-SaborReal`
 
-## 4. Verify (Browser/Postman)
-```
-GET https://saborreal-api.onrender.com/v1/catalog → {ok:true, items:49+, categories:8+}
-POST /v1/auth/register → customer account
-#/menu → add to cart → POST /v1/orders
-```
+## 2) Render (Blueprint)
 
-**Done! MVP live globally. Scale with Redis/queue next.**
+1. Render → New → Blueprint → selecione o repo acima
+2. O `render.yaml` cria: Postgres + `saborreal-api` (Docker) + `saborreal-web` (Static)
+3. Após o Web subir, ajuste `CORS_ORIGINS` na API para o domínio real do Web
+4. Garanta que `VITE_API_URL` (no Web) aponte para a API e que o CSP do Web permita esse domínio (ver `apps/web/index.html`)
 
-Created GitHub? Need `git` help?
+## 3) Bootstrap (no Shell da API)
+
+Rode nessa ordem:
+
+1. Migrations:
+- `node apps/api/dist/scripts/migrate.js`
+
+2. Seed do catálogo:
+- `node apps/api/dist/scripts/seed-catalog.js`
+
+3. Criar admin (1x):
+- setar `BOOTSTRAP_ADMIN_IDENTIFIER` e `BOOTSTRAP_ADMIN_PASSWORD` (temporário)
+- `node apps/api/dist/scripts/bootstrap-users.js`
+- remover `BOOTSTRAP_ADMIN_PASSWORD` depois de validar o login
+
+## 4) Validar (go/no-go)
+
+- `GET https://<api>/healthz` → 200
+- `GET https://<api>/healthz/readyz` → 200
+- Web: `https://<web>/#/menu`
+- Admin: `#/admin` | Motoboy: `#/motoboy`
