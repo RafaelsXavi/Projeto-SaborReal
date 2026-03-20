@@ -1,9 +1,9 @@
-services:
-  - type: postgres
-    name: saborreal-postgres
+databases:
+  - name: saborreal-postgres
     region: oregon  # ajuste para a mesma regiao do seu Postgres (ex.: oregon)
     plan: starter
 
+services:
   - type: web
     name: saborreal-api
     env: docker
