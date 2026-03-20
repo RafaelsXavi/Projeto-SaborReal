@@ -5,5 +5,5 @@
     "rootDir": "src",
     "noEmitOnError": true
   },
-  "include": ["src"]
+  "include": ["src", "api"]
 }
