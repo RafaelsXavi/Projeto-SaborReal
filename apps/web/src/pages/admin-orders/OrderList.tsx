@@ -94,7 +94,7 @@ export function OrderList({
 
   return (
     <motion.div layout className="space-y-4">
-      <AnimatePresence>
+      <AnimatePresence mode="popLayout">
         {orders.map((o) => (
           <motion.div
             key={o.id}
