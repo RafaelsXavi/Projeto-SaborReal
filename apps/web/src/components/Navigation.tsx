@@ -14,7 +14,7 @@ export function Navigation() {
     { id: 'menu', icon: 'room_service', label: 'Inicio', path: 'menu' },
     { id: 'cart', icon: 'shopping_basket', label: 'Carrinho', path: 'cart' },
     { id: 'orders', icon: 'receipt_long', label: 'Pedidos', path: 'orders' },
-    { id: 'profile', icon: 'person', label: 'Perfil', path: 'orders' },
+    { id: 'profile', icon: 'person', label: 'Perfil', path: 'login' },
   ];
 
   return (

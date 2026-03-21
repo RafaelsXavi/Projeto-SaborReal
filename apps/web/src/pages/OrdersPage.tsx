@@ -191,7 +191,7 @@ export function OrdersPage() {
                             </p>
                           </div>
                           <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-bold text-primary">
-                            {o.status}
+                            {statusLabel(o.status)}
                           </span>
                         </div>
 

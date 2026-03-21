@@ -6,32 +6,39 @@ import { useTheme } from '../hooks/useTheme';
 import { navigate } from '../router';
 
 export function LoginPage() {
-  const {
-    user,
-    loading,
-    login,
-    logout,
-    refreshSession,
-    register,
-    devCreateUser,
-  } = useAuth();
+  const { user, loading, login, logout, refreshSession, register } = useAuth();
   const { toggle } = useTheme();
 
   const [mode, setMode] = useState<'login' | 'register'>('login');
-  const [identifier, setIdentifier] = useState('dev@example.com');
-  const [password, setPassword] = useState('dev-password-123');
-  const [role, setRole] = useState<'customer' | 'admin' | 'motoboy'>(
-    'customer',
-  );
+  const [identifier, setIdentifier] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const sessionLabel = useMemo(() => {
     if (loading) return '...';
-    if (!user) return 'Anonimo';
-    return user.role;
+    if (!user) return 'Visitante';
+    const roleMap: Record<string, string> = {
+      admin: 'Administrador',
+      motoboy: 'Entregador',
+      customer: 'Cliente',
+    };
+    return roleMap[user.role] || user.role;
   }, [loading, user]);
+
+  function redirectByRole(role?: string) {
+    switch (role) {
+      case 'admin':
+        navigate('admin');
+        break;
+      case 'motoboy':
+        navigate('motoboy');
+        break;
+      default:
+        navigate('menu');
+    }
+  }
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -39,19 +46,21 @@ export function LoginPage() {
     setSubmitting(true);
     try {
       if (mode === 'register') {
-        if (role === 'customer') {
-          await register({ identifier, password });
-        } else {
-          await devCreateUser({ identifier, password, role });
-        }
+        await register({ identifier, password });
       }
       await login({ identifier, password });
-      navigate('menu');
+      await refreshSession();
     } catch (err: unknown) {
       setError(userFriendlyError(err));
     } finally {
       setSubmitting(false);
     }
+  }
+
+  // After login mutation succeeds, useAuth will refetch session.
+  // We watch for `user` changing and redirect accordingly.
+  if (user && !submitting) {
+    redirectByRole(user.role);
   }
 
   async function onLogout() {
@@ -103,7 +112,7 @@ export function LoginPage() {
                 Bem-vindo ao SaborReal
               </h1>
               <p className="pb-8 text-center text-base font-normal leading-normal text-slate-600 dark:text-slate-400 lg:text-left">
-                Sabores autenticos na sua porta
+                Sabores autênticos na sua porta
               </p>
 
               <div className="pb-8">
@@ -143,19 +152,18 @@ export function LoginPage() {
                 <div className="rounded-xl border border-primary/10 bg-white/70 p-4 dark:bg-slate-900/30">
                   <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                      <p className="text-sm font-bold">Sessao</p>
+                      <p className="text-sm font-bold">Sessão ativa</p>
                       <p className="break-all text-xs text-slate-500 dark:text-slate-400">
                         {sessionLabel}
-                        {user.userId ? ` - ${user.userId}` : ''}
                       </p>
                     </div>
                     <div className="flex flex-col gap-2 sm:flex-row">
                       <button
                         type="button"
                         className="h-11 rounded-xl border border-slate-200 bg-white px-4 font-bold transition-colors hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700"
-                        onClick={() => navigate('menu')}
+                        onClick={() => redirectByRole(user.role)}
                       >
-                        Ir ao cardapio
+                        Ir ao cardápio
                       </button>
                       <button
                         type="button"
@@ -201,7 +209,7 @@ export function LoginPage() {
                       <input
                         className="h-12 w-full rounded-lg border-slate-200 bg-white px-4 pr-12 text-slate-900 outline-none transition-all focus:border-transparent focus:ring-2 focus:ring-primary dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
                         id="password"
-                        placeholder="Minimo 8 caracteres"
+                        placeholder="Mínimo 8 caracteres"
                         type={showPassword ? 'text' : 'password'}
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
@@ -226,47 +234,16 @@ export function LoginPage() {
                         />
                       </button>
                     </div>
-                    <p className="ml-1 text-xs text-slate-500 dark:text-slate-400">
-                      Use pelo menos 8 caracteres com letras e numeros.
-                    </p>
-                  </div>
-
-                  {mode === 'register' ? (
-                    <div className="space-y-1">
-                      <label
-                        className="ml-1 text-sm font-semibold text-slate-700 dark:text-slate-300"
-                        htmlFor="role"
-                      >
-                        Tipo de conta (dev)
-                      </label>
-                      <select
-                        id="role"
-                        className="h-12 w-full rounded-lg border-slate-200 bg-white px-4 text-slate-900 outline-none transition-all focus:border-transparent focus:ring-2 focus:ring-primary dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
-                        value={role}
-                        onChange={(e) =>
-                          setRole(
-                            e.target.value as 'customer' | 'admin' | 'motoboy',
-                          )
-                        }
-                      >
-                        <option value="customer">Cliente</option>
-                        <option value="admin">Administrador</option>
-                        <option value="motoboy">Entregador</option>
-                      </select>
+                    {mode === 'register' && (
                       <p className="ml-1 text-xs text-slate-500 dark:text-slate-400">
-                        Para <span className="font-bold">admin/motoboy</span>{' '}
-                        usamos{' '}
-                        <span className="font-bold">
-                          /v1/auth/dev-create-user
-                        </span>
-                        .
+                        Use pelo menos 8 caracteres com letras e números.
                       </p>
-                    </div>
-                  ) : null}
+                    )}
+                  </div>
 
                   <div className="flex items-center justify-between gap-4 pt-1">
                     <div className="text-xs font-semibold text-primary">
-                      Sessao: {sessionLabel}
+                      {sessionLabel}
                     </div>
                     <button
                       className="text-right text-xs font-semibold text-primary hover:underline"
@@ -312,7 +289,7 @@ export function LoginPage() {
                   type="button"
                   onClick={() =>
                     setError(
-                      'Login social nao implementado (so UI por enquanto).',
+                      'Login com Google ainda não disponível.',
                     )
                   }
                 >
@@ -343,7 +320,7 @@ export function LoginPage() {
                   type="button"
                   onClick={() =>
                     setError(
-                      'Login social nao implementado (so UI por enquanto).',
+                      'Login com Facebook ainda não disponível.',
                     )
                   }
                 >
@@ -369,7 +346,7 @@ export function LoginPage() {
             <a href="/#support">Suporte</a>
           </div>
           <p className="text-[10px] text-slate-400">
-            (c) 2026 SaborReal. Todos os direitos reservados.
+            © 2026 SaborReal. Todos os direitos reservados.
           </p>
         </div>
       </div>
