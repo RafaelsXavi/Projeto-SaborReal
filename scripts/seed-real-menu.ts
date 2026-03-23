@@ -680,6 +680,16 @@ export async function seedCatalog() {
     throw new Error('DATABASE_URL not set. Cannot seed catalog.');
   }
 
+  const pgSslRaw = (process.env.PG_SSL ?? '').trim().toLowerCase();
+  const pgSsl = pgSslRaw === 'true' || pgSslRaw === '1';
+  const rejectUnauthorizedRaw = (process.env.PG_SSL_REJECT_UNAUTHORIZED ?? 'true')
+    .trim()
+    .toLowerCase();
+  const rejectUnauthorized =
+    rejectUnauthorizedRaw === 'false' || rejectUnauthorizedRaw === '0'
+      ? false
+      : true;
+
   // Quick sanity check: make sure ids look slug-like.
   for (const it of items) {
     const expected = slugify(it.id);
@@ -690,7 +700,11 @@ export async function seedCatalog() {
     }
   }
 
-  const pool = new Pool({ connectionString, max: 1 });
+  const pool = new Pool({
+    connectionString,
+    max: 1,
+    ssl: pgSsl ? { rejectUnauthorized } : undefined,
+  });
   try {
     const client = await pool.connect();
     try {
