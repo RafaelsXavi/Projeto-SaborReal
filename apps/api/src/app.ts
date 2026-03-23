@@ -24,7 +24,7 @@ export function createApp() {
   // pino-http types are based on IncomingMessage/ServerResponse; at runtime this is the Express request.
   const httpLogger = pinoHttp({
     logger,
-    genReqId: (req: IncomingMessage) => (req as unknown as Request).id,
+    genReqId: (req: IncomingMessage) => (req as any).id,
   }) as unknown as RequestHandler;
   app.use(httpLogger);
 

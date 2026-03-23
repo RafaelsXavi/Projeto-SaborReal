@@ -15,8 +15,8 @@ export function jwtAuth(): RequestHandler {
   return (req, res, next) => {
     const bearer = bearerFromAuthHeader(req.header('authorization'));
     const cookieToken =
-      typeof req.cookies?.[env.ACCESS_TOKEN_COOKIE_NAME] === 'string'
-        ? (req.cookies[env.ACCESS_TOKEN_COOKIE_NAME] as string)
+      typeof (req as any).cookies?.[env.ACCESS_TOKEN_COOKIE_NAME] === 'string'
+        ? ((req as any).cookies[env.ACCESS_TOKEN_COOKIE_NAME] as string)
         : null;
     const token = bearer ?? cookieToken;
 
@@ -28,7 +28,7 @@ export function jwtAuth(): RequestHandler {
     } catch (_err) {
       // Treat invalid/expired tokens as anonymous; protected routes will reject.
       if (!bearer && cookieToken) {
-        res.clearCookie(env.ACCESS_TOKEN_COOKIE_NAME, { path: '/' });
+        (res as any).clearCookie(env.ACCESS_TOKEN_COOKIE_NAME, { path: '/' });
       }
       delete req.auth;
     }
@@ -46,13 +46,13 @@ export function csrfProtection(): RequestHandler {
     if (bearer) return next();
 
     const hasCookieAuth =
-      Boolean(req.cookies?.[env.ACCESS_TOKEN_COOKIE_NAME]) ||
-      Boolean(req.cookies?.[env.REFRESH_TOKEN_COOKIE_NAME]);
+      Boolean((req as any).cookies?.[env.ACCESS_TOKEN_COOKIE_NAME]) ||
+      Boolean((req as any).cookies?.[env.REFRESH_TOKEN_COOKIE_NAME]);
     if (!hasCookieAuth) return next();
 
     const csrfCookie =
-      typeof req.cookies?.[env.CSRF_COOKIE_NAME] === 'string'
-        ? (req.cookies[env.CSRF_COOKIE_NAME] as string)
+      typeof (req as any).cookies?.[env.CSRF_COOKIE_NAME] === 'string'
+        ? ((req as any).cookies[env.CSRF_COOKIE_NAME] as string)
         : null;
     const csrfHeader = req.header('x-csrf-token')?.trim() ?? null;
 

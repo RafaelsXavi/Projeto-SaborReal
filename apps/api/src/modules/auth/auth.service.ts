@@ -6,18 +6,12 @@ import { signAccessToken, verifyAccessToken } from './jwt.js';
 
 export type SessionUser = { userId: string; role: Role };
 
-export function cookieSecurityOptions(): Pick<
-  CookieOptions,
-  'secure' | 'sameSite' | 'path' | 'domain'
-> {
+export function cookieSecurityOptions(): CookieOptions {
   const secure = env.NODE_ENV === 'production';
-  const base: Pick<CookieOptions, 'secure' | 'sameSite' | 'path'> = {
-    secure,
-    sameSite: env.COOKIE_SAMESITE as CookieOptions['sameSite'],
-    path: '/',
-  };
+  const base: CookieOptions = { secure, path: '/' };
+  (base as any).sameSite = env.COOKIE_SAMESITE;
   if (typeof env.COOKIE_DOMAIN === 'string' && env.COOKIE_DOMAIN.trim()) {
-    return { ...base, domain: env.COOKIE_DOMAIN.trim() };
+    (base as any).domain = env.COOKIE_DOMAIN.trim();
   }
   return base;
 }

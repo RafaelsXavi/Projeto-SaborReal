@@ -1,8 +1,14 @@
-﻿import 'express-serve-static-core';
+import type { Role } from '@saborreal/shared';
 
-declare module 'express-serve-static-core' {
-  interface Request {
-    id: string;
-    log?: import('pino').Logger;
+declare global {
+  namespace Express {
+    interface Request {
+      id?: string;
+      auth?: { userId: string; role: Role };
+      cookies?: Record<string, string>;
+    }
   }
 }
+
+export {};
+

@@ -1,11 +1,11 @@
-import type { RequestHandler } from 'express';
+import type { Request, RequestHandler } from 'express';
 import { getPgPool } from '../../db/postgres.js';
 import { AppError } from '../../middleware/error.js';
 import { PgJobsRepo } from '../jobs/jobs.repo.js';
 import { placeOrderSchema } from './orders.schemas.js';
 import { placeOrder } from './orders.service.js';
 
-function getIdempotencyKey(req: Parameters<RequestHandler>[0]) {
+function getIdempotencyKey(req: Request) {
   const raw = req.header('idempotency-key')?.trim();
   if (!raw) return null;
   if (raw.length > 120) return null;

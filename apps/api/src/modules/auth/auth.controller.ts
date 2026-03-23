@@ -1,5 +1,5 @@
 import type { Role } from '@saborreal/shared';
-import type { RequestHandler } from 'express';
+import type { Request, RequestHandler, Response } from 'express';
 import { env } from '../../config/env.js';
 import { AppError } from '../../middleware/error.js';
 import { requirePgPool } from './auth.pg.js';
@@ -30,15 +30,15 @@ function addDays(date: Date, days: number) {
   return new Date(date.getTime() + days * 24 * 60 * 60 * 1000);
 }
 
-function getCookie(req: Parameters<RequestHandler>[0], name: string) {
-  const value = req.cookies?.[name];
+function getCookie(req: Request, name: string) {
+  const value = (req as any).cookies?.[name] as unknown;
   return typeof value === 'string' && value.length > 0 ? value : null;
 }
 
-function clearAuthCookies(res: Parameters<RequestHandler>[1]) {
-  res.clearCookie(env.ACCESS_TOKEN_COOKIE_NAME, { path: '/' });
-  res.clearCookie(env.REFRESH_TOKEN_COOKIE_NAME, { path: '/v1/auth' });
-  res.clearCookie(env.CSRF_COOKIE_NAME, { path: '/' });
+function clearAuthCookies(res: Response) {
+  (res as any).clearCookie(env.ACCESS_TOKEN_COOKIE_NAME, { path: '/' });
+  (res as any).clearCookie(env.REFRESH_TOKEN_COOKIE_NAME, { path: '/v1/auth' });
+  (res as any).clearCookie(env.CSRF_COOKIE_NAME, { path: '/' });
 }
 
 export const register: RequestHandler = async (req, res, next) => {
@@ -303,12 +303,12 @@ export const logout: RequestHandler = async (req, res, next) => {
 export const session: RequestHandler = (req, res) => {
   if (!req.auth) return res.json({ authenticated: false });
   const existing =
-    typeof req.cookies?.[env.CSRF_COOKIE_NAME] === 'string'
-      ? (req.cookies[env.CSRF_COOKIE_NAME] as string)
+    typeof (req as any).cookies?.[env.CSRF_COOKIE_NAME] === 'string'
+      ? ((req as any).cookies[env.CSRF_COOKIE_NAME] as string)
       : null;
   const csrfToken = existing ?? newCsrfToken();
   if (!existing) {
-    res.cookie(env.CSRF_COOKIE_NAME, csrfToken, csrfCookieOptions());
+    (res as any).cookie(env.CSRF_COOKIE_NAME, csrfToken, csrfCookieOptions());
   }
   res.json({ authenticated: true, user: req.auth, csrfToken });
 };

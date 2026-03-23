@@ -4,8 +4,8 @@ import type { NextFunction, Request, Response } from 'express';
 export function requestId() {
   return (req: Request, res: Response, next: NextFunction) => {
     const id = randomUUID();
-    req.id = id;
-    res.setHeader('X-Request-Id', id);
+    (req as any).id = id;
+    res.set('X-Request-Id', id);
     next();
   };
 }
