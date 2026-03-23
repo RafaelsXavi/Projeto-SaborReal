@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { env } from '../config/env.js';
+import { logger } from '../config/logger.js';
 import { mongoPing, pgPing } from '../db/index.js';
 import { AppError } from '../middleware/error.js';
 
@@ -33,6 +34,15 @@ healthRouter.get('/readyz', async (_req, res, next) => {
     const mongoOk = mongo.status === 'fulfilled' && mongo.value.ok;
 
     if (!pgOk || !mongoOk) {
+      logger.error(
+        {
+          pg: summarizeSettled(pg),
+          mongo: summarizeSettled(mongo),
+          hasDbEnv: Boolean(env.DATABASE_URL),
+          requestId: (res as any).get?.('X-Request-Id'),
+        },
+        'readiness_failed',
+      );
       // In production, keep readiness failure reasons out of the response body.
       if (env.NODE_ENV === 'production') {
         return next(new AppError('NOT_READY', 503));
