@@ -39,7 +39,7 @@ describe('useMotoboyOrders', () => {
           }),
         });
       }
-      if (url.includes('assigned')) {
+      if (url.includes('mine')) {
         return Promise.resolve({
           ok: true,
           json: async () => ({

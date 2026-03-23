@@ -80,10 +80,12 @@ export function getCsrfToken() {
 }
 
 export function apiBaseUrl() {
-  return (
-    (import.meta.env.VITE_API_URL as string | undefined) ??
-    'http://localhost:3001'
-  );
+  const explicit = import.meta.env.VITE_API_URL as string | undefined;
+  if (explicit && explicit.trim()) return explicit;
+  if (!import.meta.env.DEV && typeof window !== 'undefined') {
+    return window.location.origin;
+  }
+  return 'http://localhost:3001';
 }
 
 export async function apiFetch(
@@ -95,13 +97,16 @@ export async function apiFetch(
   const unsafe = method !== 'GET' && method !== 'HEAD' && method !== 'OPTIONS';
   const csrfToken = unsafe ? getCsrfToken() : null;
 
+  const headers = new Headers(init?.headers);
+  const hasBody = init?.body != null && method !== 'GET' && method !== 'HEAD';
+  if (hasBody && !headers.has('Content-Type')) {
+    headers.set('Content-Type', 'application/json');
+  }
+  if (csrfToken) headers.set('X-CSRF-Token', csrfToken);
+
   const fetchOptions: RequestInit = {
     ...init,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(csrfToken ? { 'X-CSRF-Token': csrfToken } : {}),
-      ...(init?.headers ?? {}),
-    },
+    headers,
     credentials: 'include',
   };
 

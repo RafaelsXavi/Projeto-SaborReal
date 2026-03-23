@@ -5,13 +5,13 @@ import { apiFetch } from '../api';
 export type MotoboyOrder = EnrichedOrder;
 
 async function fetchAvailableOrders(): Promise<MotoboyOrder[]> {
-  const res = await apiFetch('/v1/motoboy/available');
+  const res = await apiFetch('/v1/motoboy/orders/available');
   const data = (await res.json()) as { ok: boolean; orders: MotoboyOrder[] };
   return Array.isArray(data.orders) ? data.orders : [];
 }
 
 async function fetchAssignedOrders(): Promise<MotoboyOrder[]> {
-  const res = await apiFetch('/v1/motoboy/assigned');
+  const res = await apiFetch('/v1/motoboy/orders/mine');
   const data = (await res.json()) as { ok: boolean; orders: MotoboyOrder[] };
   return Array.isArray(data.orders) ? data.orders : [];
 }

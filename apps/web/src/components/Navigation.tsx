@@ -4,6 +4,7 @@ import { MaterialIcon } from './MaterialIcon';
 
 export function Navigation() {
   const route = useHashRoute();
+  const activeRoute = route ?? 'menu';
 
   const navItems: {
     id: string;
@@ -20,31 +21,32 @@ export function Navigation() {
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-slate-100 bg-white/80 pb-safe backdrop-blur-lg dark:border-slate-800 dark:bg-slate-900/80">
       <div className="mx-auto grid max-w-6xl grid-cols-4 px-3 py-2 sm:px-4">
-        {navItems.map((item) => (
-          <button
-            type="button"
-            key={item.id}
-            onClick={() => navigate(item.path)}
-            className={`flex min-w-0 flex-col items-center gap-1 py-1 transition-all ${
-              route === item.id || (item.id === 'menu' && !route)
-                ? 'scale-110 text-primary'
-                : 'text-slate-400 hover:text-primary/70 dark:text-slate-500'
-            }`}
-          >
-            <div
-              className={`rounded-xl p-1.5 transition-all ${
-                route === item.id || (item.id === 'menu' && !route)
-                  ? 'bg-primary/10'
-                  : ''
+        {navItems.map((item) => {
+          const isActive = activeRoute === item.path;
+          return (
+            <button
+              type="button"
+              key={item.id}
+              onClick={() => navigate(item.path)}
+              className={`flex min-w-0 flex-col items-center gap-1 py-1 transition-all ${
+                isActive
+                  ? 'scale-110 text-primary'
+                  : 'text-slate-400 hover:text-primary/70 dark:text-slate-500'
               }`}
             >
-              <MaterialIcon name={item.icon} className="text-2xl" />
-            </div>
-            <span className="text-center text-[10px] font-black uppercase tracking-tighter">
-              {item.label}
-            </span>
-          </button>
-        ))}
+              <div
+                className={`rounded-xl p-1.5 transition-all ${
+                  isActive ? 'bg-primary/10' : ''
+                }`}
+              >
+                <MaterialIcon name={item.icon} className="text-2xl" />
+              </div>
+              <span className="text-center text-[10px] font-black uppercase tracking-tighter">
+                {item.label}
+              </span>
+            </button>
+          );
+        })}
       </div>
     </nav>
   );

@@ -9,6 +9,18 @@ const boolFromString = z.preprocess((v) => {
   return v;
 }, z.boolean());
 
+function envWithAliases(src: NodeJS.ProcessEnv) {
+  const env = { ...src } as Record<string, string | undefined>;
+
+  // Allow PT-BR aliases (seen in some Vercel setups)
+  env.TRUST_PROXY ??= env.PROXY_DE_CONFIANCA;
+  env.CORS_ORIGINS ??= env.ORIGENS_CORS;
+  env.COOKIE_SAMESITE ??= env.COOKIE_MESITE;
+  env.DATABASE_URL ??= env.URL_DO_BANCO_DE_DADOS;
+
+  return env;
+}
+
 const envSchema = z
   .object({
     NODE_ENV: z
@@ -32,6 +44,11 @@ const envSchema = z
     REFRESH_TOKEN_TTL_DAYS: z.coerce.number().int().min(1).default(30),
     REFRESH_TOKEN_COOKIE_NAME: z.string().default('sr_rt'),
     CSRF_COOKIE_NAME: z.string().default('sr_csrf'),
+    COOKIE_SAMESITE: z
+      .enum(['lax', 'strict', 'none'])
+      .optional()
+      .transform((v) => (typeof v === 'string' ? v.toLowerCase() : v)),
+    COOKIE_DOMAIN: z.string().optional(),
     DEV_AUTH_ENABLED: boolFromString.optional(),
 
     // DBs
@@ -44,7 +61,7 @@ const envSchema = z
   })
   .passthrough();
 
-const parsed = envSchema.parse(process.env);
+const parsed = envSchema.parse(envWithAliases(process.env));
 
 const devAuthEnabled =
   typeof parsed.DEV_AUTH_ENABLED === 'boolean'
@@ -81,6 +98,8 @@ export const env = {
   REFRESH_TOKEN_TTL_DAYS: parsed.REFRESH_TOKEN_TTL_DAYS,
   REFRESH_TOKEN_COOKIE_NAME: parsed.REFRESH_TOKEN_COOKIE_NAME,
   CSRF_COOKIE_NAME: parsed.CSRF_COOKIE_NAME,
+  COOKIE_SAMESITE: parsed.COOKIE_SAMESITE ?? 'lax',
+  COOKIE_DOMAIN: parsed.COOKIE_DOMAIN,
   DEV_AUTH_ENABLED: devAuthEnabled,
 
   DATABASE_URL: parsed.DATABASE_URL,

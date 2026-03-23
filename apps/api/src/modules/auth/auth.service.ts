@@ -8,10 +8,18 @@ export type SessionUser = { userId: string; role: Role };
 
 export function cookieSecurityOptions(): Pick<
   CookieOptions,
-  'secure' | 'sameSite' | 'path'
+  'secure' | 'sameSite' | 'path' | 'domain'
 > {
   const secure = env.NODE_ENV === 'production';
-  return { secure, sameSite: 'lax', path: '/' };
+  const base: Pick<CookieOptions, 'secure' | 'sameSite' | 'path'> = {
+    secure,
+    sameSite: env.COOKIE_SAMESITE as CookieOptions['sameSite'],
+    path: '/',
+  };
+  if (typeof env.COOKIE_DOMAIN === 'string' && env.COOKIE_DOMAIN.trim()) {
+    return { ...base, domain: env.COOKIE_DOMAIN.trim() };
+  }
+  return base;
 }
 
 export function issueAccessToken(user: SessionUser) {
