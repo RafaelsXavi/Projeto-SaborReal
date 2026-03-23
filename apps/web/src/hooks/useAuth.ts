@@ -9,7 +9,7 @@ type SessionResponse =
   | { authenticated: true; user: AuthUser; csrfToken?: string };
 
 async function fetchSession(): Promise<AuthUser | null> {
-  const res = await apiFetch('/v1/auth/session');
+  const res = await apiFetch('/v1/auth/session', { cache: 'no-store' });
   const body = (await res.json()) as SessionResponse;
   if (body.authenticated && typeof body.csrfToken === 'string') {
     setCsrfToken(body.csrfToken);

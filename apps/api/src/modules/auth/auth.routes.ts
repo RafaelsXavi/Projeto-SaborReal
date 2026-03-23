@@ -3,6 +3,7 @@ import { Router } from 'express';
 import { rateLimit } from 'express-rate-limit';
 import { z } from 'zod';
 
+import { env } from '../../config/env.js';
 import { validateBody } from '../../middleware/validate.js';
 import {
   devCreateUser,
@@ -14,6 +15,13 @@ import {
 } from './auth.controller.js';
 
 export const authRouter = Router();
+
+// Auth endpoints must never be cached (prevents 304/ETag stale session issues).
+authRouter.use((_req, res, next) => {
+  res.setHeader('Cache-Control', 'no-store');
+  res.setHeader('Pragma', 'no-cache');
+  next();
+});
 
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
@@ -53,8 +61,10 @@ authRouter.post('/logout', logout);
 authRouter.get('/session', session);
 
 // DEV ONLY: create admin/motoboy accounts without seeding.
-authRouter.post(
-  '/dev-create-user',
-  validateBody(devCreateUserSchema),
-  devCreateUser,
-);
+if (env.DEV_AUTH_ENABLED) {
+  authRouter.post(
+    '/dev-create-user',
+    validateBody(devCreateUserSchema),
+    devCreateUser,
+  );
+}
