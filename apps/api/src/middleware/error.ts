@@ -29,6 +29,18 @@ function looksLikeDbUnavailable(err: unknown) {
   return false;
 }
 
+function looksLikeDbNotConfigured(err: unknown) {
+  const e = err as { code?: unknown; message?: unknown } | null;
+  const code = typeof e?.code === 'string' ? e.code : null;
+  const message = typeof e?.message === 'string' ? e.message : '';
+
+  // Postgres: undefined_table
+  if (code === '42P01') return true;
+  if (message.includes('DATABASE_NOT_CONFIGURED')) return true;
+  if (message.includes('does not exist') && message.includes('relation')) return true;
+  return false;
+}
+
 export class AppError extends Error {
   code: string;
   status: number;
@@ -52,9 +64,20 @@ export function errorHandler(): ErrorRequestHandler {
   return (err, req, res, _next) => {
     const isAppError = err instanceof AppError;
     const dbUnavailable = !isAppError && looksLikeDbUnavailable(err);
+    const dbNotConfigured = !isAppError && !dbUnavailable && looksLikeDbNotConfigured(err);
 
-    const status = isAppError ? err.status : dbUnavailable ? 503 : 500;
-    const code = isAppError ? err.code : dbUnavailable ? 'DATABASE_UNAVAILABLE' : 'INTERNAL';
+    const status = isAppError
+      ? err.status
+      : dbUnavailable || dbNotConfigured
+        ? 503
+        : 500;
+    const code = isAppError
+      ? err.code
+      : dbNotConfigured
+        ? 'DATABASE_NOT_CONFIGURED'
+        : dbUnavailable
+          ? 'DATABASE_UNAVAILABLE'
+          : 'INTERNAL';
 
     // Log full details server-side, but keep client responses minimal.
     req.log?.error(
@@ -75,7 +98,9 @@ export function errorHandler(): ErrorRequestHandler {
         ? 'UNEXPECTED'
         : err instanceof AppError
           ? err.message
-          : dbUnavailable
+          : dbNotConfigured
+            ? 'DATABASE_NOT_CONFIGURED'
+            : dbUnavailable
             ? 'DATABASE_UNAVAILABLE'
             : 'UNEXPECTED';
 
