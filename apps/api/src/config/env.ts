@@ -58,6 +58,10 @@ const envSchema = z
     PG_SSL_REJECT_UNAUTHORIZED: boolFromString.optional(),
     MONGO_URI: z.string().optional(),
     MONGO_DB: z.string().default('saborreal'),
+
+    // Diagnostics
+    // If set, allows GET /healthz/readyz?token=... to return detailed readiness info even in production.
+    READYZ_TOKEN: z.string().optional(),
   })
   .passthrough();
 
@@ -107,4 +111,6 @@ export const env = {
   PG_SSL_REJECT_UNAUTHORIZED: parsed.PG_SSL_REJECT_UNAUTHORIZED ?? true,
   MONGO_URI: parsed.MONGO_URI,
   MONGO_DB: parsed.MONGO_DB,
+
+  READYZ_TOKEN: parsed.READYZ_TOKEN,
 };
