@@ -50,6 +50,16 @@ export function userFriendlyError(value: unknown) {
         return 'Pedido nao pode ser cancelado neste estado.';
       case 'ORDER_NOT_FOUND':
         return 'Pedido nao encontrado.';
+      case 'INVALID_CEP':
+        return 'CEP invalido. Informe um CEP com 8 numeros.';
+      case 'CEP_NOT_FOUND':
+        return 'CEP nao encontrado.';
+      case 'DELIVERY_ADDRESS_NOT_FOUND':
+        return 'Nao foi possivel localizar o endereco informado.';
+      case 'DELIVERY_ROUTE_NOT_FOUND':
+        return 'Nao foi possivel calcular a rota para este endereco.';
+      case 'DELIVERY_QUOTE_FAILED':
+        return 'Falha ao calcular a taxa de entrega. Tente novamente.';
       default:
         return value.message;
     }

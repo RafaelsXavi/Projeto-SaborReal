@@ -3,6 +3,7 @@ import { getPgPool } from '../../db/postgres.js';
 import { PgOrdersRepo } from './orders.pg.repo.js';
 import { InMemoryOrdersRepo } from './orders.repo.js';
 import type { EnrichedOrder, Order, OrderLine } from './orders.types.js';
+import { quoteDelivery } from '../delivery/delivery.service.js';
 
 type OrdersRepo = {
   placeOrder(input: {
@@ -11,6 +12,12 @@ type OrdersRepo = {
     idempotencyKey: string;
     body: unknown;
     distanceKm?: number | undefined;
+    deliveryFee?: number | undefined; // BRL
+    delivery?: {
+      cep: string;
+      number: string;
+      notes?: string | undefined;
+    } | undefined;
   }): Promise<{ order: Order; replay: boolean }>;
   listByUser(userId: string): Promise<Order[]>;
   listAll(): Promise<Order[]>;
@@ -155,8 +162,37 @@ export async function placeOrder(input: {
   idempotencyKey: string;
   body: unknown;
   distanceKm?: number | undefined;
+  delivery?: {
+    cep: string;
+    number: string;
+    notes?: string | undefined;
+  } | undefined;
 }) {
-  return await repo().placeOrder(input);
+  if (input.delivery) {
+    const q = await quoteDelivery({
+      cep: input.delivery.cep,
+      number: input.delivery.number,
+    });
+    return await repo().placeOrder({
+      ...input,
+      distanceKm: q.distanceKm,
+      deliveryFee: q.fee,
+      delivery: {
+        cep: input.delivery.cep.replaceAll(/\D/g, ''),
+        number: input.delivery.number,
+        notes: input.delivery.notes,
+      },
+    });
+  }
+
+  const distanceKm = input.distanceKm ?? 0;
+  const deliveryFee = Number((distanceKm * env.DELIVERY_FEE_PER_KM).toFixed(2));
+
+  return await repo().placeOrder({
+    ...input,
+    distanceKm,
+    deliveryFee,
+  });
 }
 
 export async function listOrdersForUser(userId: string) {

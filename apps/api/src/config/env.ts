@@ -62,6 +62,12 @@ const envSchema = z
     // Diagnostics
     // If set, allows GET /healthz/readyz?token=... to return detailed readiness info even in production.
     READYZ_TOKEN: z.string().optional(),
+
+    // Delivery
+    RESTAURANT_CEP: z.string().optional(),
+    RESTAURANT_ADDRESS: z.string().optional(),
+    RESTAURANT_NUMBER: z.string().optional(),
+    DELIVERY_FEE_PER_KM: z.coerce.number().min(0).optional(),
   })
   .passthrough();
 
@@ -113,4 +119,9 @@ export const env = {
   MONGO_DB: parsed.MONGO_DB,
 
   READYZ_TOKEN: parsed.READYZ_TOKEN,
+
+  RESTAURANT_CEP: parsed.RESTAURANT_CEP ?? '06726615',
+  RESTAURANT_ADDRESS: parsed.RESTAURANT_ADDRESS ?? 'Rua Encanto, SP, Brasil',
+  RESTAURANT_NUMBER: parsed.RESTAURANT_NUMBER ?? '',
+  DELIVERY_FEE_PER_KM: parsed.DELIVERY_FEE_PER_KM ?? 1.35,
 };

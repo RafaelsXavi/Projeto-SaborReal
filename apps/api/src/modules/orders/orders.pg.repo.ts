@@ -34,6 +34,9 @@ type OrderRow = {
   motoboy_id: string | null;
   distance_km: number | null;
   delivery_fee: number | null;
+  delivery_cep: string | null;
+  delivery_number: string | null;
+  delivery_notes: string | null;
 };
 
 type LineRow = {
@@ -52,6 +55,9 @@ function toOrder(row: OrderRow, lines: OrderLine[]): Order {
     lines,
     distanceKm: row.distance_km ?? undefined,
     deliveryFee: row.delivery_fee ?? undefined,
+    deliveryCep: row.delivery_cep ?? undefined,
+    deliveryNumber: row.delivery_number ?? undefined,
+    deliveryNotes: row.delivery_notes ?? undefined,
   };
   if (row.motoboy_id) {
     return { ...base, motoboyId: row.motoboy_id };
@@ -109,6 +115,8 @@ export class PgOrdersRepo {
     idempotencyKey: string;
     body: unknown;
     distanceKm?: number | undefined;
+    deliveryFee?: number | undefined;
+    delivery?: { cep: string; number: string; notes?: string | undefined } | undefined;
   }): Promise<{ order: Order; replay: boolean }> {
     const orderId = randomUUID();
     const bodyHash = hashBody(input.body);
@@ -141,12 +149,20 @@ export class PgOrdersRepo {
       }
 
       const distanceKm = input.distanceKm ?? 0;
-      const deliveryFee = Number((distanceKm * 1.4).toFixed(2));
+      const deliveryFee = input.deliveryFee ?? 0;
 
       await client.query(
-        `insert into orders (id, user_id, status, distance_km, delivery_fee)
-         values ($1, $2, 'PLACED', $3, $4)`,
-        [orderId, input.userId, distanceKm, deliveryFee],
+        `insert into orders (id, user_id, status, distance_km, delivery_fee, delivery_cep, delivery_number, delivery_notes)
+         values ($1, $2, 'PLACED', $3, $4, $5, $6, $7)`,
+        [
+          orderId,
+          input.userId,
+          distanceKm,
+          deliveryFee,
+          input.delivery?.cep ?? null,
+          input.delivery?.number ?? null,
+          input.delivery?.notes ?? null,
+        ],
       );
 
       for (const [idx, l] of input.lines.entries()) {
@@ -171,6 +187,11 @@ export class PgOrdersRepo {
           status: 'PLACED',
           createdAt: nowIso,
           lines: input.lines,
+          distanceKm,
+          deliveryFee,
+          deliveryCep: input.delivery?.cep ?? undefined,
+          deliveryNumber: input.delivery?.number ?? undefined,
+          deliveryNotes: input.delivery?.notes ?? undefined,
         },
         replay: false,
       };
@@ -184,7 +205,7 @@ export class PgOrdersRepo {
 
   async getById(orderId: string): Promise<Order | null> {
     const oRes = await this.pool.query<OrderRow>(
-      `select id, user_id, status, created_at, motoboy_id, distance_km, delivery_fee
+      `select id, user_id, status, created_at, motoboy_id, distance_km, delivery_fee, delivery_cep, delivery_number, delivery_notes
        from orders
        where id = $1
        limit 1`,
@@ -209,7 +230,7 @@ export class PgOrdersRepo {
 
   async listAll(): Promise<Order[]> {
     const oRes = await this.pool.query<OrderRow>(
-      `select id, user_id, status, created_at, motoboy_id, distance_km, delivery_fee
+      `select id, user_id, status, created_at, motoboy_id, distance_km, delivery_fee, delivery_cep, delivery_number, delivery_notes
        from orders
        order by created_at asc`,
     );
@@ -218,7 +239,7 @@ export class PgOrdersRepo {
 
   async listByUser(userId: string): Promise<Order[]> {
     const oRes = await this.pool.query<OrderRow>(
-      `select id, user_id, status, created_at, motoboy_id, distance_km, delivery_fee
+      `select id, user_id, status, created_at, motoboy_id, distance_km, delivery_fee, delivery_cep, delivery_number, delivery_notes
        from orders
        where user_id = $1
        order by created_at asc`,
@@ -229,7 +250,7 @@ export class PgOrdersRepo {
 
   async listByMotoboy(motoboyId: string): Promise<Order[]> {
     const oRes = await this.pool.query<OrderRow>(
-      `select id, user_id, status, created_at, motoboy_id, distance_km, delivery_fee
+      `select id, user_id, status, created_at, motoboy_id, distance_km, delivery_fee, delivery_cep, delivery_number, delivery_notes
        from orders
        where motoboy_id = $1
        order by created_at asc`,
@@ -240,7 +261,7 @@ export class PgOrdersRepo {
 
   async listAvailableForMotoboy(): Promise<Order[]> {
     const oRes = await this.pool.query<OrderRow>(
-      `select id, user_id, status, created_at, motoboy_id, distance_km, delivery_fee
+      `select id, user_id, status, created_at, motoboy_id, distance_km, delivery_fee, delivery_cep, delivery_number, delivery_notes
        from orders
        where motoboy_id is null and status = 'READY_FOR_PICKUP'
        order by created_at asc`,
@@ -433,7 +454,7 @@ export class PgOrdersRepo {
 
   async listAvailableForMotoboyEnriched(): Promise<EnrichedOrder[]> {
     const oRes = await this.pool.query<OrderRow>(
-      `select id, user_id, status, created_at, motoboy_id, distance_km, delivery_fee
+      `select id, user_id, status, created_at, motoboy_id, distance_km, delivery_fee, delivery_cep, delivery_number, delivery_notes
        from orders
        where motoboy_id is null and status = 'READY_FOR_PICKUP'
        order by created_at asc`,
@@ -443,7 +464,7 @@ export class PgOrdersRepo {
 
   async listByMotoboyEnriched(motoboyId: string): Promise<EnrichedOrder[]> {
     const oRes = await this.pool.query<OrderRow>(
-      `select id, user_id, status, created_at, motoboy_id, distance_km, delivery_fee
+      `select id, user_id, status, created_at, motoboy_id, distance_km, delivery_fee, delivery_cep, delivery_number, delivery_notes
        from orders
        where motoboy_id = $1
        order by created_at asc`,

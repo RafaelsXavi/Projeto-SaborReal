@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from 'framer-motion';
-import React, { Suspense, useCallback, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { apiFetch, userFriendlyError } from '../api';
 import { MaterialIcon } from '../components/MaterialIcon';
 import { Navigation } from '../components/Navigation';
@@ -9,18 +9,24 @@ import { CartHeader } from './cart/CartHeader';
 import { CartItemRow } from './cart/CartItemRow';
 import { CartSummary } from './cart/CartSummary';
 
-const DeliveryMap = React.lazy(() =>
-  import('../components/DeliveryMap').then((m) => ({ default: m.DeliveryMap })),
-);
-
 export function CartPage() {
   const { cartLines, add, dec, remove, clear, totalCents } = useCart();
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [orderSuccess, setOrderSuccess] = useState(false);
-  const [distanceKm, setDistanceKm] = useState<number | null>(null);
+  const [cep, setCep] = useState('');
+  const [number, setNumber] = useState('');
+  const [notes, setNotes] = useState('');
+  const [quote, setQuote] = useState<
+    | { distanceKm: number; feeBrl: number; address: string }
+    | null
+  >(null);
+  const [quoting, setQuoting] = useState(false);
 
-  const deliveryFee = distanceKm ? distanceKm * 1.4 : 0;
+  const deliveryFeeCents = useMemo(() => {
+    if (!quote) return 0;
+    return Math.round(quote.feeBrl * 100);
+  }, [quote]);
 
   const handleCheckout = useCallback(async () => {
     setIsProcessing(true);
@@ -33,7 +39,13 @@ export function CartPage() {
         },
         body: JSON.stringify({
           lines: cartLines.map((it) => ({ id: it.item.id, qty: it.qty })),
-          distanceKm: distanceKm || undefined,
+          delivery: quote
+            ? {
+                cep,
+                number,
+                notes: notes.trim() ? notes.trim() : undefined,
+              }
+            : undefined,
         }),
       });
 
@@ -44,7 +56,38 @@ export function CartPage() {
     } finally {
       setIsProcessing(false);
     }
-  }, [cartLines, distanceKm, clear]);
+  }, [cartLines, clear, quote, cep, number, notes]);
+
+  const handleQuote = useCallback(async () => {
+    setQuoting(true);
+    setError(null);
+    try {
+      const qs = new URLSearchParams({
+        cep,
+        number,
+      });
+      const res = await apiFetch(`/v1/delivery/quote?${qs.toString()}`, {
+        method: 'GET',
+        cache: 'no-store',
+      });
+      const body = (await res.json()) as {
+        ok: boolean;
+        distanceKm: number;
+        fee: number;
+        customerAddress: string;
+      };
+      setQuote({
+        distanceKm: body.distanceKm,
+        feeBrl: body.fee,
+        address: body.customerAddress,
+      });
+    } catch (err) {
+      setQuote(null);
+      setError(userFriendlyError(err));
+    } finally {
+      setQuoting(false);
+    }
+  }, [cep, number]);
 
   if (orderSuccess) {
     return (
@@ -134,25 +177,81 @@ export function CartPage() {
                     /
                   </span>
                   <span className="text-sm font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">
-                    {distanceKm ? `${distanceKm.toFixed(2)} km` : 'Pendente'}
+                    {quote ? `${quote.distanceKm.toFixed(2)} km` : 'Pendente'}
                   </span>
                 </h3>
-                <Suspense
-                  fallback={
-                    <div className="flex h-64 w-full items-center justify-center rounded-3xl border border-slate-200 bg-white/50 text-slate-500 dark:border-slate-800 dark:bg-slate-900/30 dark:text-slate-300 sm:h-72">
-                      <div className="flex items-center gap-3">
-                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary/30 border-t-primary" />
-                        <span className="text-sm font-bold">
-                          Carregando mapa...
+
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div>
+                      <label className="mb-1 block text-sm font-semibold text-slate-600 dark:text-slate-400">
+                        CEP
+                      </label>
+                      <input
+                        className="h-11 w-full rounded-lg border border-slate-200 bg-white px-4 text-sm outline-none transition-all focus:ring-2 focus:ring-primary dark:border-slate-700 dark:bg-slate-800"
+                        value={cep}
+                        onChange={(e) => setCep(e.target.value)}
+                        placeholder="06726-615"
+                        inputMode="numeric"
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-sm font-semibold text-slate-600 dark:text-slate-400">
+                        Número
+                      </label>
+                      <input
+                        className="h-11 w-full rounded-lg border border-slate-200 bg-white px-4 text-sm outline-none transition-all focus:ring-2 focus:ring-primary dark:border-slate-700 dark:bg-slate-800"
+                        value={number}
+                        onChange={(e) => setNumber(e.target.value)}
+                        placeholder="123"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="mb-1 block text-sm font-semibold text-slate-600 dark:text-slate-400">
+                      Observação (opcional)
+                    </label>
+                    <textarea
+                      className="min-h-20 w-full resize-none rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition-all focus:ring-2 focus:ring-primary dark:border-slate-700 dark:bg-slate-800"
+                      value={notes}
+                      onChange={(e) => setNotes(e.target.value)}
+                      placeholder="Ex.: casa dos fundos, portão preto..."
+                      maxLength={300}
+                    />
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleQuote}
+                    disabled={quoting || !cep.trim() || !number.trim()}
+                    className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-slate-900 font-bold text-white shadow-lg transition-all hover:bg-slate-800 disabled:opacity-60 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white"
+                  >
+                    {quoting ? (
+                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white dark:border-slate-900/20 dark:border-t-slate-900" />
+                    ) : (
+                      <MaterialIcon name="calculate" className="text-lg" />
+                    )}
+                    Calcular taxa
+                  </button>
+
+                  {quote ? (
+                    <div className="rounded-xl border border-primary/10 bg-primary/5 p-4 text-sm text-slate-700 dark:border-primary/20 dark:bg-primary/10 dark:text-slate-200">
+                      <p className="font-bold">Endereço:</p>
+                      <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                        {quote.address}
+                      </p>
+                      <div className="mt-3 flex items-center justify-between">
+                        <span className="text-xs font-bold uppercase tracking-widest text-slate-400">
+                          Taxa
+                        </span>
+                        <span className="text-sm font-black text-primary">
+                          R$ {quote.feeBrl.toFixed(2)}
                         </span>
                       </div>
                     </div>
-                  }
-                >
-                  <DeliveryMap
-                    onLocationSelect={(_lat, _lng, dist) => setDistanceKm(dist)}
-                  />
-                </Suspense>
+                  ) : null}
+                </div>
               </div>
             </section>
           </div>
@@ -171,10 +270,10 @@ export function CartPage() {
             <div className="pointer-events-auto mx-auto w-full max-w-6xl px-4 pb-2 sm:px-6 lg:px-8">
               <CartSummary
                 subtotal={totalCents}
-                deliveryFee={deliveryFee}
+                deliveryFee={deliveryFeeCents}
                 onCheckout={handleCheckout}
                 isProcessing={isProcessing}
-                disabled={cartLines.length === 0}
+                disabled={cartLines.length === 0 || !quote}
               />
             </div>
           </motion.div>

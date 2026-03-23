@@ -26,7 +26,7 @@ export const placeOrderHandler: RequestHandler = async (req, res, next) => {
       return next(new AppError('INVALID_INPUT', 400));
     }
 
-    const { lines, distanceKm } = validated.data;
+    const { lines, distanceKm, delivery } = validated.data;
     try {
       const result = await placeOrder({
         userId: req.auth.userId,
@@ -34,6 +34,7 @@ export const placeOrderHandler: RequestHandler = async (req, res, next) => {
         idempotencyKey,
         body: req.body,
         distanceKm,
+        delivery,
       });
 
       res.status(result.replay ? 200 : 201).json({

@@ -1,5 +1,6 @@
 import { createHash, randomUUID } from 'node:crypto';
 import type { Order, OrderLine } from './orders.types.js';
+import { env } from '../../config/env.js';
 
 type IdempotencyRecord = { key: string; bodyHash: string; orderId: string };
 
@@ -73,6 +74,8 @@ export class InMemoryOrdersRepo {
     idempotencyKey: string;
     body: unknown;
     distanceKm?: number | undefined;
+    deliveryFee?: number | undefined;
+    delivery?: { cep: string; number: string; notes?: string | undefined } | undefined;
   }): { order: Order; replay: boolean } {
     const idKey = `${input.userId}:${input.idempotencyKey}`;
     const bodyHash = hashBody(input.body);
@@ -89,7 +92,8 @@ export class InMemoryOrdersRepo {
 
     const id = randomUUID();
     const distanceKm = input.distanceKm ?? 0;
-    const deliveryFee = Number((distanceKm * 1.4).toFixed(2));
+    const deliveryFee =
+      input.deliveryFee ?? Number((distanceKm * env.DELIVERY_FEE_PER_KM).toFixed(2));
 
     const order: Order = {
       id,
@@ -99,6 +103,9 @@ export class InMemoryOrdersRepo {
       distanceKm,
       deliveryFee,
       createdAt: new Date().toISOString(),
+      deliveryCep: input.delivery?.cep,
+      deliveryNumber: input.delivery?.number,
+      deliveryNotes: input.delivery?.notes,
     };
 
     this.orders.set(id, order);
