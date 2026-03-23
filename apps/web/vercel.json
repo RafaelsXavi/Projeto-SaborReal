@@ -1,0 +1,17 @@
+{
+  "rewrites": [
+    {
+      "source": "/healthz/(.*)",
+      "destination": "https://saborreal-api.vercel.app/healthz/$1"
+    },
+    {
+      "source": "/healthz",
+      "destination": "https://saborreal-api.vercel.app/healthz"
+    },
+    {
+      "source": "/v1/(.*)",
+      "destination": "https://saborreal-api.vercel.app/v1/$1"
+    }
+  ]
+}
+
