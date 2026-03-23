@@ -1,5 +1,6 @@
 export type RouteId =
   | 'login'
+  | 'profile'
   | 'menu'
   | 'cart'
   | 'orders'
@@ -17,6 +18,7 @@ export function parseHashRoute(hash: string): RouteId | null {
 
   switch (seg) {
     case 'login':
+    case 'profile':
     case 'menu':
     case 'cart':
     case 'orders':

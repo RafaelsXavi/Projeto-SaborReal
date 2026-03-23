@@ -16,6 +16,9 @@ const OrdersPage = React.lazy(() =>
 const LoginPage = React.lazy(() =>
   import('./pages/LoginPage').then((m) => ({ default: m.LoginPage })),
 );
+const ProfilePage = React.lazy(() =>
+  import('./pages/ProfilePage').then((m) => ({ default: m.ProfilePage })),
+);
 const MotoboyPage = React.lazy(() =>
   import('./pages/MotoboyPage').then((m) => ({ default: m.MotoboyPage })),
 );
@@ -127,6 +130,9 @@ export default function App() {
   switch (route) {
     case 'login':
       page = <LoginPage />;
+      break;
+    case 'profile':
+      page = <ProfilePage />;
       break;
     case 'cart':
       page = <CartPage />;

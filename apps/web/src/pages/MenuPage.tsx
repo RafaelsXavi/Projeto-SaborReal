@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { MaterialIcon } from '../components/MaterialIcon';
 import { Navigation } from '../components/Navigation';
 import { Skeleton } from '../components/Skeleton';
@@ -19,6 +19,7 @@ export function MenuPage() {
 
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [toast, setToast] = useState<string | null>(null);
 
   const filteredCatalog = useMemo(() => {
     let list = catalog;
@@ -41,9 +42,16 @@ export function MenuPage() {
   const handleAddToCart = useCallback(
     (item: CatalogItem) => {
       add(item);
+      setToast(`Adicionado ao carrinho: ${item.name}`);
     },
     [add],
   );
+
+  useEffect(() => {
+    if (!toast) return;
+    const t = window.setTimeout(() => setToast(null), 1600);
+    return () => window.clearTimeout(t);
+  }, [toast]);
 
   const handleSelectCategory = useCallback((id: string) => {
     setSelectedCategory(id);
@@ -132,6 +140,20 @@ export function MenuPage() {
       </main>
 
       <Navigation />
+
+      {toast ? (
+        <div className="pointer-events-none fixed bottom-20 left-0 right-0 z-50 px-4 sm:bottom-24 sm:px-6">
+          <div className="mx-auto flex max-w-md items-center justify-between gap-3 rounded-2xl bg-slate-900/95 px-4 py-3 text-white shadow-2xl backdrop-blur">
+            <div className="flex items-center gap-2">
+              <MaterialIcon name="check_circle" className="text-lg text-emerald-400" />
+              <p className="text-sm font-bold">{toast}</p>
+            </div>
+            <span className="text-xs text-slate-300">
+              Itens: {totalQty}
+            </span>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
