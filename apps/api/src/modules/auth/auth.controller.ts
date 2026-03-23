@@ -174,7 +174,7 @@ export const login: RequestHandler = async (req, res, next) => {
       userId: user.id,
       tokenHash: hashRefreshToken(refreshToken),
       expiresAt: addDays(new Date(), env.REFRESH_TOKEN_TTL_DAYS),
-      userAgent: req.header('user-agent') ?? null,
+      userAgent: (req as any).get?.('user-agent') ?? req.headers?.['user-agent'] ?? null,
       ip: req.ip ?? null,
     });
 
@@ -242,7 +242,7 @@ export const refresh: RequestHandler = async (req, res, next) => {
       userId: user.id,
       tokenHash: hashRefreshToken(nextRefreshRaw),
       expiresAt: addDays(now, env.REFRESH_TOKEN_TTL_DAYS),
-      userAgent: req.header('user-agent') ?? null,
+      userAgent: (req as any).get?.('user-agent') ?? req.headers?.['user-agent'] ?? null,
       ip: req.ip ?? null,
     });
 

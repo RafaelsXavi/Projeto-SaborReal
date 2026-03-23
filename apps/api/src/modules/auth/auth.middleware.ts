@@ -1,3 +1,4 @@
+import { timingSafeEqual } from 'node:crypto';
 import type { RequestHandler } from 'express';
 import { env } from '../../config/env.js';
 import { AppError } from '../../middleware/error.js';
@@ -11,9 +12,19 @@ function bearerFromAuthHeader(headerValue: string | undefined) {
   return value.trim();
 }
 
+/** Constant-time string comparison to prevent timing attacks. */
+function safeCompare(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  return timingSafeEqual(Buffer.from(a, 'utf8'), Buffer.from(b, 'utf8'));
+}
+
 export function jwtAuth(): RequestHandler {
   return (req, res, next) => {
-    const bearer = bearerFromAuthHeader(req.header('authorization'));
+    const authHeader =
+      (req as any).get?.('authorization') ?? req.headers?.authorization;
+    const bearer = bearerFromAuthHeader(
+      Array.isArray(authHeader) ? authHeader[0] : authHeader,
+    );
     const cookieToken =
       typeof (req as any).cookies?.[env.ACCESS_TOKEN_COOKIE_NAME] === 'string'
         ? ((req as any).cookies[env.ACCESS_TOKEN_COOKIE_NAME] as string)
@@ -42,7 +53,11 @@ export function csrfProtection(): RequestHandler {
   return (req, _res, next) => {
     if (!unsafe.has(req.method.toUpperCase())) return next();
 
-    const bearer = bearerFromAuthHeader(req.header('authorization'));
+    const authHeader =
+      (req as any).get?.('authorization') ?? req.headers?.authorization;
+    const bearer = bearerFromAuthHeader(
+      Array.isArray(authHeader) ? authHeader[0] : authHeader,
+    );
     if (bearer) return next();
 
     const hasCookieAuth =
@@ -54,9 +69,12 @@ export function csrfProtection(): RequestHandler {
       typeof (req as any).cookies?.[env.CSRF_COOKIE_NAME] === 'string'
         ? ((req as any).cookies[env.CSRF_COOKIE_NAME] as string)
         : null;
-    const csrfHeader = req.header('x-csrf-token')?.trim() ?? null;
+    const csrfRaw =
+      (req as any).get?.('x-csrf-token') ?? req.headers?.['x-csrf-token'];
+    const csrfHeader =
+      (Array.isArray(csrfRaw) ? csrfRaw[0] : csrfRaw)?.trim?.() ?? null;
 
-    if (!csrfCookie || !csrfHeader || csrfCookie !== csrfHeader) {
+    if (!csrfCookie || !csrfHeader || !safeCompare(csrfCookie, csrfHeader)) {
       return next(new AppError('CSRF_INVALID', 403));
     }
 

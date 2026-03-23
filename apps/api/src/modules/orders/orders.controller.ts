@@ -6,7 +6,8 @@ import { placeOrderSchema } from './orders.schemas.js';
 import { placeOrder } from './orders.service.js';
 
 function getIdempotencyKey(req: Request) {
-  const raw = req.header('idempotency-key')?.trim();
+  const rawHeader = (req as any).get?.('idempotency-key') ?? req.headers?.['idempotency-key'];
+  const raw = (Array.isArray(rawHeader) ? rawHeader[0] : rawHeader)?.trim?.();
   if (!raw) return null;
   if (raw.length > 120) return null;
   return raw;
