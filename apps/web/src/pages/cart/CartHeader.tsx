@@ -14,7 +14,7 @@ export function CartHeader() {
       </button>
       <div>
         <h1 className="text-2xl font-black text-slate-900 dark:text-slate-100 tracking-tight">
-          Meu <span className="text-primary italic">Pedido</span>
+          Carrinho
         </h1>
         <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 leading-none mt-1">
           Confira seus itens

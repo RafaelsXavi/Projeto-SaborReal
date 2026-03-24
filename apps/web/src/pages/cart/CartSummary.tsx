@@ -19,7 +19,7 @@ export function CartSummary({
   const total = subtotal + deliveryFee;
 
   return (
-    <div className="bg-white dark:bg-slate-900 rounded-t-[3rem] p-8 shadow-[0_-20px_50px_-20px_rgba(0,0,0,0.15)] dark:shadow-none border-t border-slate-100 dark:border-slate-800">
+    <div className="bg-white/80 dark:bg-slate-900/40 rounded-[2rem] p-6 sm:p-8 shadow-sm backdrop-blur-sm border border-slate-200/70 dark:border-slate-800">
       <div className="space-y-4 mb-8">
         <div className="flex justify-between items-center">
           <span className="text-slate-400 font-bold text-sm uppercase tracking-widest">
@@ -71,7 +71,7 @@ export function CartSummary({
 
       <p className="text-center text-[10px] text-slate-400 mt-6 font-bold uppercase tracking-widest flex items-center justify-center gap-2">
         <MaterialIcon name="lock" className="text-xs" />
-        Pagamento Seguro & Criptografado
+        Pagamento seguro
       </p>
     </div>
   );

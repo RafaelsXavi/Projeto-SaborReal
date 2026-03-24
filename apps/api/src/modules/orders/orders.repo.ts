@@ -196,4 +196,22 @@ export class InMemoryOrdersRepo {
     this.orders.set(order.id, next);
     return next;
   }
+
+  getMotoboyStats(motoboyId: string): {
+    completedToday: number;
+    earningsTodayCents: number;
+  } {
+    const today = new Date().toISOString().split('T')[0];
+    const completed = this.listAll().filter(
+      (o) =>
+        o.motoboyId === motoboyId &&
+        o.status === 'COMPLETED' &&
+        o.createdAt.startsWith(today),
+    );
+    const earnings = completed.reduce((acc, o) => acc + (o.deliveryFee ?? 0), 0);
+    return {
+      completedToday: completed.length,
+      earningsTodayCents: Math.round(earnings * 100),
+    };
+  }
 }

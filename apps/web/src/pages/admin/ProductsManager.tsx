@@ -11,6 +11,7 @@ export function ProductsManager() {
     useAdminCatalog();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<CatalogItem | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -45,6 +46,31 @@ export function ProductsManager() {
       available: item.available ?? true,
     });
     setIsModalOpen(true);
+  };
+|
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append('image', file);
+
+    try {
+      setIsUploading(true);
+      const res = await apiFetch('/v1/admin/upload', {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await res.json();
+      if (data.url) {
+        setFormData((prev) => ({ ...prev, imageUrl: data.url }));
+      }
+    } catch (err) {
+      console.error('Upload failed:', err);
+      alert('Falha ao fazer upload da imagem.');
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   const handleSubmit = async (e: FormEvent) => {
@@ -253,16 +279,34 @@ export function ProductsManager() {
                   >
                     URL da Imagem
                   </label>
-                  <input
-                    id="product-image-url"
-                    type="text"
-                    value={formData.imageUrl}
-                    onChange={(e) =>
-                      setFormData({ ...formData, imageUrl: e.target.value })
-                    }
-                    placeholder="https://exemplo.com/foto.jpg"
-                    className="w-full rounded-xl border border-slate-100 bg-slate-50 px-4 py-3 text-sm font-bold placeholder:text-slate-300 focus:border-primary/30 focus:outline-none dark:border-slate-800 dark:bg-slate-800/50"
-                  />
+                  <div className="flex gap-2">
+                    <input
+                      id="product-image-url"
+                      type="text"
+                      value={formData.imageUrl}
+                      onChange={(e) =>
+                        setFormData({ ...formData, imageUrl: e.target.value })
+                      }
+                      placeholder="https://exemplo.com/foto.jpg"
+                      className="flex-1 rounded-xl border border-slate-100 bg-slate-50 px-4 py-3 text-sm font-bold placeholder:text-slate-300 focus:border-primary/30 focus:outline-none dark:border-slate-800 dark:bg-slate-800/50"
+                    />
+                    <label className="flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-slate-100 px-4 py-3 text-slate-500 transition-all hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700">
+                      <MaterialIcon
+                        name={isUploading ? 'sync' : 'upload'}
+                        className={isUploading ? 'animate-spin' : ''}
+                      />
+                      <span className="text-xs font-bold uppercase tracking-widest">
+                        {isUploading ? '...' : 'Upload'}
+                      </span>
+                      <input
+                        type="file"
+                        className="hidden"
+                        accept="image/*"
+                        onChange={handleImageUpload}
+                        disabled={isUploading}
+                      />
+                    </label>
+                  </div>
                 </div>
                 <div className="col-span-2 flex items-center gap-2 py-2">
                   <input

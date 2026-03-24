@@ -523,4 +523,25 @@ export class PgOrdersRepo {
       };
     });
   }
+
+  async getMotoboyStats(
+    motoboyId: string,
+  ): Promise<{ completedToday: number; earningsTodayCents: number }> {
+    const res = await this.pool.query<{ count: string; total_fee: string | null }>(
+      `select count(id) as count,
+              sum(delivery_fee) as total_fee
+       from orders
+       where motoboy_id = $1
+         and status = 'COMPLETED'
+         and created_at >= (now() at time zone 'utc')::date`,
+      [motoboyId],
+    );
+    const row = res.rows[0];
+    const count = parseInt(row?.count ?? '0', 10);
+    const totalFeeBrl = parseFloat(row?.total_fee ?? '0');
+    return {
+      completedToday: count,
+      earningsTodayCents: Math.round(totalFeeBrl * 100),
+    };
+  }
 }

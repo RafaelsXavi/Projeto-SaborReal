@@ -22,6 +22,7 @@ export function useAdminOrders() {
   } = useQuery({
     queryKey: ['admin', 'orders'],
     queryFn: fetchAdminOrders,
+    refetchInterval: 15_000,
   });
 
   const updateStatusMutation = useMutation({

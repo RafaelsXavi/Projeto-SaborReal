@@ -1,4 +1,5 @@
-﻿import type { IncomingMessage } from 'node:http';
+import type { IncomingMessage } from 'node:http';
+import path from 'node:path';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import express, { type Request, type RequestHandler } from 'express';
@@ -39,9 +40,20 @@ export function createApp() {
           frameAncestors: ["'self'"],
           objectSrc: ["'none'"],
           scriptSrc: ["'self'"],
-          styleSrc: ["'self'"],
-          fontSrc: ["'self'"],
-          imgSrc: ["'self'", 'data:', 'https:'],
+          styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+          fontSrc: ["'self'", 'https://fonts.gstatic.com'],
+          imgSrc: [
+            "'self'",
+            'data:',
+            'blob:',
+            'https:',
+            'https://*.openstreetmap.org',
+          ],
+          connectSrc: [
+            "'self'",
+            'https://*.openstreetmap.org',
+            'https://*.project-osrm.org',
+          ],
         },
       },
     }) as unknown as RequestHandler,
@@ -89,6 +101,11 @@ export function createApp() {
       legacyHeaders: false,
     }) as unknown as RequestHandler,
   );
+
+  app.use(
+    '/uploads',
+    express.static(path.join(process.cwd(), 'uploads')),
+  ) as unknown as RequestHandler;
 
   app.use(routes);
 

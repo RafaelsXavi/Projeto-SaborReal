@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { apiFetch, userFriendlyError } from '../api';
 import { MaterialIcon } from '../components/MaterialIcon';
+import { Navigation } from '../components/Navigation';
 import { useAuth } from '../hooks/useAuth';
 import { useCatalog } from '../hooks/useCatalog';
 import { useTheme } from '../hooks/useTheme';
@@ -56,16 +57,25 @@ export function OrdersPage() {
     return m;
   }, [catalog]);
 
-  useEffect(() => {
+  const fetchOrders = useCallback(async (isInitial = false) => {
     if (!user) return;
-    setLoading(true);
-    setError(null);
-    apiFetch('/v1/me/orders')
-      .then((res) => res.json() as Promise<{ ok: boolean; orders: Order[] }>)
-      .then((data) => setOrders(Array.isArray(data.orders) ? data.orders : []))
-      .catch((e: unknown) => setError(userFriendlyError(e)))
-      .finally(() => setLoading(false));
+    if (isInitial) setLoading(true);
+    try {
+      const res = await apiFetch('/v1/me/orders');
+      const data = (await res.json()) as { ok: boolean; orders: Order[] };
+      setOrders(Array.isArray(data.orders) ? data.orders : []);
+    } catch (e: unknown) {
+      if (isInitial) setError(userFriendlyError(e));
+    } finally {
+      if (isInitial) setLoading(false);
+    }
   }, [user]);
+
+  useEffect(() => {
+    fetchOrders(true);
+    const id = setInterval(() => fetchOrders(false), 30_000);
+    return () => clearInterval(id);
+  }, [fetchOrders]);
 
   async function cancelOrder(id: string) {
     setBusyId(id);
@@ -233,38 +243,8 @@ export function OrdersPage() {
         )}
       </main>
 
-      <nav className="fixed bottom-0 left-0 right-0 border-t border-slate-200 bg-white pb-safe-area-inset-bottom dark:border-slate-800 dark:bg-slate-900">
-        <div className="mx-auto flex h-16 max-w-lg items-center justify-around">
-          <a
-            className="flex flex-col items-center gap-0.5 text-slate-400 dark:text-slate-500"
-            href="#/menu"
-          >
-            <MaterialIcon name="home" />
-            <span className="text-[10px] font-medium">Inicio</span>
-          </a>
-          <a
-            className="flex flex-col items-center gap-0.5 text-slate-400 dark:text-slate-500"
-            href="#/menu"
-          >
-            <MaterialIcon name="restaurant_menu" />
-            <span className="text-[10px] font-medium">Cardapio</span>
-          </a>
-          <a
-            className="flex flex-col items-center gap-0.5 text-primary"
-            href="#/orders"
-          >
-            <MaterialIcon name="receipt_long" fill />
-            <span className="text-[10px] font-bold">Pedidos</span>
-          </a>
-          <a
-            className="flex flex-col items-center gap-0.5 text-slate-400 dark:text-slate-500"
-            href="#/login"
-          >
-            <MaterialIcon name="person" />
-            <span className="text-[10px] font-medium">Perfil</span>
-          </a>
-        </div>
-      </nav>
+      <Navigation />
     </div>
   );
 }
+

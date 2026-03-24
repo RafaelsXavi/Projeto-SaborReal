@@ -17,51 +17,51 @@ export function userFriendlyError(value: unknown) {
   if (isApiFetchError(value)) {
     switch (value.code) {
       case 'DATABASE_NOT_CONFIGURED':
-        return 'API sem banco configurado (Postgres). Rode as migrations e suba o Postgres.';
+        return 'Sistema em manutenção (banco).';
       case 'DATABASE_UNAVAILABLE':
-        return 'Banco indisponivel no momento. Tente novamente em alguns instantes.';
+        return 'Tente novamente em instantes.';
       case 'INVALID_CREDENTIALS':
-        return 'Credenciais invalidas.';
+        return 'Login ou senha incorretos.';
       case 'USER_ALREADY_EXISTS':
-        return 'Usuario ja existe.';
+        return 'Este cadastro já existe.';
       case 'UNAUTHENTICATED':
-        return 'Voce precisa entrar para continuar.';
+        return 'Entre na sua conta para continuar.';
       case 'FORBIDDEN':
-        return 'Voce nao tem permissao para executar esta acao.';
+        return 'Você não tem permissão.';
       case 'CSRF_INVALID':
-        return 'Sessao invalida (CSRF). Refaca o login.';
+        return 'Sessão expirada. Entre de novo.';
       case 'IDEMPOTENCY_KEY_REUSED':
-        return 'Idempotency-Key reutilizada com payload diferente.';
+        return 'Pedido já enviado.';
       case 'ORDER_NOT_READY_FOR_PICKUP':
-        return 'Este pedido ainda nao esta pronto para retirada.';
+        return 'Pedido ainda não está pronto.';
       case 'ORDER_MOTOBOY_REQUIRED':
-        return 'Aguardando um motoboy aceitar o pedido.';
+        return 'Aguardando motoboy.';
       case 'ORDER_ALREADY_ASSIGNED':
-        return 'Este pedido ja foi atribuido a outro motoboy.';
+        return 'Pedido já em entrega.';
       case 'ORDER_INVALID_STATUS_TRANSITION':
-        return 'Transicao de status invalida para este pedido.';
+        return 'Status inválido.';
       case 'ORDER_NOT_AVAILABLE':
-        return 'Pedido nao esta disponivel.';
+        return 'Pedido indisponível.';
       case 'ORDER_NOT_ASSIGNED':
-        return 'Pedido ainda nao foi atribuido.';
+        return 'Aguardando motoboy.';
       case 'ORDER_NOT_COMPLETABLE':
-        return 'Pedido nao pode ser finalizado neste estado.';
+        return 'Não pode finalizar agora.';
       case 'ORDER_NOT_CANCELLABLE':
-        return 'Pedido nao pode ser cancelado neste estado.';
+        return 'Não pode cancelar agora.';
       case 'ORDER_NOT_FOUND':
-        return 'Pedido nao encontrado.';
+        return 'Pedido não encontrado.';
       case 'INVALID_CEP':
-        return 'CEP invalido. Informe um CEP com 8 numeros.';
+        return 'CEP inválido.';
       case 'CEP_NOT_FOUND':
-        return 'CEP nao encontrado.';
+        return 'CEP não encontrado.';
       case 'DELIVERY_ADDRESS_NOT_FOUND':
-        return 'Nao foi possivel localizar o endereco informado.';
+        return 'Endereço não localizado.';
       case 'DELIVERY_ROUTE_NOT_FOUND':
-        return 'Nao foi possivel calcular a rota para este endereco.';
+        return 'Rota não encontrada.';
       case 'DELIVERY_QUOTE_FAILED':
-        return 'Falha ao calcular a taxa de entrega. Tente novamente.';
+        return 'Falha ao calcular frete.';
       default:
-        return value.message;
+        return 'Algo deu errado. Tente de novo.';
     }
   }
 
@@ -109,7 +109,8 @@ export async function apiFetch(
 
   const headers = new Headers(init?.headers);
   const hasBody = init?.body != null && method !== 'GET' && method !== 'HEAD';
-  if (hasBody && !headers.has('Content-Type')) {
+  const isFormData = hasBody && init.body instanceof FormData;
+  if (hasBody && !headers.has('Content-Type') && !isFormData) {
     headers.set('Content-Type', 'application/json');
   }
   if (csrfToken) headers.set('X-CSRF-Token', csrfToken);

@@ -33,6 +33,10 @@ type OrdersRepo = {
     orderId: string;
     motoboyId: string;
   }): Promise<Order>;
+  getMotoboyStats(motoboyId: string): Promise<{
+    completedToday: number;
+    earningsTodayCents: number;
+  }>;
 };
 
 let cachedRepo: OrdersRepo | null = null;
@@ -129,6 +133,11 @@ function resolveRepo(): OrdersRepo {
           () => pg.completeByMotoboy(input),
           () => fallback.completeByMotoboy(input),
         )(),
+      getMotoboyStats: async (motoboyId) =>
+        wrap(
+          () => pg.getMotoboyStats(motoboyId),
+          () => fallback.getMotoboyStats(motoboyId),
+        )(),
     };
   }
 
@@ -147,6 +156,7 @@ function resolveRepo(): OrdersRepo {
     updateStatus: async (input) => mem.updateStatus(input),
     cancelOrder: async (input) => mem.cancelOrder(input),
     completeByMotoboy: async (input) => mem.completeByMotoboy(input),
+    getMotoboyStats: async (motoboyId) => mem.getMotoboyStats(motoboyId),
   };
 }
 
@@ -234,6 +244,10 @@ export async function completeByMotoboy(input: {
   motoboyId: string;
 }) {
   return await repo().completeByMotoboy(input);
+}
+
+export async function getMotoboyStats(motoboyId: string) {
+  return await repo().getMotoboyStats(motoboyId);
 }
 
 // ── Enriched queries for the Motoboy view ────────────────────────────

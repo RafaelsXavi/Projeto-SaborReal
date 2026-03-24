@@ -1,4 +1,3 @@
-import { AnimatePresence, motion } from 'framer-motion';
 import React, { useCallback, useMemo, useState } from 'react';
 import { apiFetch, userFriendlyError } from '../api';
 import { MaterialIcon } from '../components/MaterialIcon';
@@ -99,7 +98,7 @@ export function CartPage() {
           Pedido <span className="text-primary italic">confirmado!</span>
         </h1>
         <p className="mb-10 max-w-xs font-bold leading-relaxed text-slate-500 dark:text-slate-400">
-          Seu pedido foi recebido e ja esta sendo preparado com todo carinho.
+          Pedido recebido! Estamos preparando.
         </p>
         <button
           type="button"
@@ -114,7 +113,7 @@ export function CartPage() {
 
   return (
     <div className="flex min-h-screen flex-col bg-slate-50 font-sans text-slate-900 selection:bg-primary/30 dark:bg-background-dark dark:text-slate-100">
-      <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col px-4 pb-28 pt-6 sm:px-6 sm:pt-8 lg:px-8">
+      <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col px-4 pb-24 pt-6 sm:px-6 sm:pt-8 lg:px-8">
         <CartHeader />
 
         {error && (
@@ -130,24 +129,24 @@ export function CartPage() {
               <MaterialIcon name="shopping_basket" className="text-6xl" />
             </div>
             <h2 className="mb-2 text-xl font-black text-slate-900 dark:text-slate-100">
-              Seu carrinho esta vazio
+              Carrinho vazio
             </h2>
             <p className="mb-8 text-sm font-bold italic text-slate-400">
-              Que tal escolher uma delicia do cardapio?
+              Escolha algo gostoso no cardápio!
             </p>
             <button
               type="button"
               onClick={() => navigate('menu')}
               className="rounded-2xl bg-primary px-10 py-4 text-xs font-black uppercase tracking-[0.2em] text-white shadow-lg shadow-primary/20 transition-all hover:brightness-110 active:scale-95"
             >
-              Ver cardapio
+              Ver cardápio
             </button>
           </div>
         ) : (
           <div className="mb-20 grid gap-10 lg:grid-cols-[minmax(0,1.4fr)_minmax(320px,0.9fr)] lg:items-start">
             <section>
               <h3 className="mb-6 flex items-center gap-2 text-xl font-black">
-                Itens selecionados
+                Itens pedidos
                 <span className="font-normal text-slate-300 dark:text-slate-700">
                   /
                 </span>
@@ -172,7 +171,7 @@ export function CartPage() {
             <section className="lg:sticky lg:top-24">
               <div className="rounded-[2rem] border border-slate-200/70 bg-white/80 p-5 shadow-sm backdrop-blur-sm dark:border-slate-800 dark:bg-slate-900/40 sm:p-6">
                 <h3 className="mb-6 flex items-center gap-2 text-xl font-black">
-                  Local de entrega
+                  Endereço
                   <span className="font-normal text-slate-300 dark:text-slate-700">
                     /
                   </span>
@@ -256,29 +255,19 @@ export function CartPage() {
             </section>
           </div>
         )}
-      </main>
 
-      <AnimatePresence>
         {cartLines.length > 0 && (
-          <motion.div
-            initial={{ y: 100 }}
-            animate={{ y: 0 }}
-            exit={{ y: 100 }}
-            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="pointer-events-none fixed bottom-0 left-0 right-0 z-50"
-          >
-            <div className="pointer-events-auto mx-auto w-full max-w-6xl px-4 pb-2 sm:px-6 lg:px-8">
-              <CartSummary
-                subtotal={totalCents}
-                deliveryFee={deliveryFeeCents}
-                onCheckout={handleCheckout}
-                isProcessing={isProcessing}
-                disabled={cartLines.length === 0 || !quote}
-              />
-            </div>
-          </motion.div>
+          <div className="mt-10">
+            <CartSummary
+              subtotal={totalCents}
+              deliveryFee={deliveryFeeCents}
+              onCheckout={handleCheckout}
+              isProcessing={isProcessing}
+              disabled={cartLines.length === 0 || !quote}
+            />
+          </div>
         )}
-      </AnimatePresence>
+      </main>
 
       <Navigation />
     </div>

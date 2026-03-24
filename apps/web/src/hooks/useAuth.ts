@@ -56,7 +56,7 @@ export function useAuth() {
     mutationFn: async () => {
       await apiFetch('/v1/auth/logout', { method: 'POST' });
     },
-    onSuccess: () => {
+    onSettled: () => {
       queryClient.setQueryData(['session'], null);
       setCsrfToken(null);
     },

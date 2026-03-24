@@ -4,6 +4,7 @@ import { AppError } from '../../../middleware/error.js';
 import { motoboyCompleteOrder } from '../../../modules/orders/orders.motoboy.controller.js';
 import {
   acceptOrder,
+  getMotoboyStats,
   listAvailableOrdersEnriched,
   listOrdersForMotoboyEnriched,
 } from '../../../modules/orders/orders.service.js';
@@ -66,6 +67,19 @@ motoboyRouter.post('/orders/:id/accept', async (req, res, next) => {
       throw err;
     }
   } catch (err) {
+    next(err);
+  }
+});
+
+motoboyRouter.get('/stats', async (req, res, next) => {
+  try {
+    if (!req.auth) return next(new AppError('UNAUTHENTICATED', 401));
+    const stats = await getMotoboyStats(req.auth.userId);
+    res.json({ ok: true, stats });
+  } catch (err) {
+    if (err instanceof Error && err.message === 'DATABASE_NOT_CONFIGURED') {
+      return next(new AppError('DATABASE_NOT_CONFIGURED', 503));
+    }
     next(err);
   }
 });

@@ -76,3 +76,24 @@ export function useMotoboyOrders() {
       completeMutation.error,
   };
 }
+export function useMotoboyStats() {
+  const statsQuery = useQuery({
+    queryKey: ['motoboy', 'stats'],
+    queryFn: async () => {
+      const res = await apiFetch('/v1/motoboy/stats');
+      const data = (await res.json()) as {
+        ok: boolean;
+        stats: { completedToday: number; earningsTodayCents: number };
+      };
+      return data.stats;
+    },
+    staleTime: 30_000,
+    refetchInterval: 60_000,
+  });
+
+  return {
+    stats: statsQuery.data,
+    loading: statsQuery.isLoading,
+    error: statsQuery.error,
+  };
+}

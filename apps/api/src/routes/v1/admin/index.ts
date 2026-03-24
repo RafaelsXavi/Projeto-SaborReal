@@ -1,4 +1,12 @@
+import path from 'node:path';
+import {
+  createCatalogItemSchema,
+  createMotoboySchema,
+  updateCatalogItemSchema,
+  updateMotoboySchema,
+} from '@saborreal/shared';
 import { Router } from 'express';
+import multer from 'multer';
 import { requireRole } from '../../../middleware/auth.js';
 import { AppError } from '../../../middleware/error.js';
 import { validateBody } from '../../../middleware/validate.js';
@@ -14,6 +22,7 @@ import {
   adminDeleteCatalogItem,
   adminUpdateCatalogItem,
 } from '../../../modules/catalog/catalog.admin.controller.js';
+import { listCatalog } from '../../../modules/catalog/catalog.service.js';
 import {
   getJob,
   listJobs,
@@ -50,11 +59,32 @@ adminRouter.get('/audit', listAuditEvents);
 
 // Motoboy CRUD
 adminRouter.get('/motoboys', listMotoboys);
-adminRouter.post('/motoboys', createMotoboy);
-adminRouter.put('/motoboys/:id', updateMotoboy);
+adminRouter.post('/motoboys', validateBody(createMotoboySchema), createMotoboy);
+adminRouter.put(
+  '/motoboys/:id',
+  validateBody(updateMotoboySchema),
+  updateMotoboy,
+);
 adminRouter.delete('/motoboys/:id', deleteMotoboy);
 
 // Catalog CRUD
-adminRouter.post('/catalog', adminCreateCatalogItem);
-adminRouter.patch('/catalog/:id', adminUpdateCatalogItem);
+adminRouter.get('/catalog', async (_req, res, next) => {
+  try {
+    const catalog = await listCatalog();
+    res.json({ ok: true, ...catalog });
+  } catch (err) {
+    next(err);
+  }
+});
+adminRouter.post(
+  '/catalog',
+  validateBody(createCatalogItemSchema),
+  adminCreateCatalogItem,
+);
+adminRouter.patch(
+  '/catalog/:id',
+  validateBody(updateCatalogItemSchema),
+  adminUpdateCatalogItem,
+);
 adminRouter.delete('/catalog/:id', adminDeleteCatalogItem);
+
