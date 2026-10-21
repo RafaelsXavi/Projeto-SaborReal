@@ -1,3 +1,5 @@
+> Para deploy gratuito, siga [DEPLOY_GRATUITO.md](DEPLOY_GRATUITO.md). As seções de banco Render abaixo são históricas; o Blueprint atual usa Postgres externo.
+
 # MVP SaborReal (Render) - Passo 0
 
 Este documento e a "fonte da verdade" para configuracao e politicas de producao.
@@ -101,3 +103,4 @@ Observacoes:
 
 - Dev/local: `npm -w @saborreal/api run mvp:bootstrap`
 - Producao (apos build): `npm -w @saborreal/api run mvp:bootstrap:prod`
+

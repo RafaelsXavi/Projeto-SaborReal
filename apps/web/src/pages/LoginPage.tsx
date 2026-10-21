@@ -101,9 +101,7 @@ export function LoginPage() {
 
         <div className="mx-auto grid w-full max-w-6xl flex-1 gap-8 px-4 pb-8 pt-2 lg:grid-cols-[minmax(0,1fr)_minmax(360px,520px)] lg:items-center lg:px-8">
           <div className="order-2 lg:order-1">
-            <div
-              className="login-hero flex min-h-[240px] w-full flex-col justify-end overflow-hidden rounded-[2rem] bg-primary/10 bg-cover bg-center bg-no-repeat sm:min-h-[320px] lg:min-h-[560px]"
-            />
+            <div className="login-hero flex min-h-[240px] w-full flex-col justify-end overflow-hidden rounded-[2rem] bg-primary/10 bg-cover bg-center bg-no-repeat sm:min-h-[320px] lg:min-h-[560px]" />
           </div>
 
           <div className="order-1 px-2 py-4 lg:order-2 lg:px-0">
@@ -288,9 +286,7 @@ export function LoginPage() {
                   className="flex h-12 items-center justify-center rounded-lg border border-slate-200 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800"
                   type="button"
                   onClick={() =>
-                    setError(
-                      'Login com Google ainda não disponível.',
-                    )
+                    setError('Login com Google ainda não disponível.')
                   }
                 >
                   <svg className="mr-2 h-5 w-5" viewBox="0 0 24 24">
@@ -319,9 +315,7 @@ export function LoginPage() {
                   className="flex h-12 items-center justify-center rounded-lg border border-slate-200 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800"
                   type="button"
                   onClick={() =>
-                    setError(
-                      'Login com Facebook ainda não disponível.',
-                    )
+                    setError('Login com Facebook ainda não disponível.')
                   }
                 >
                   <svg

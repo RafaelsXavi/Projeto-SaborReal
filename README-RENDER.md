@@ -1,3 +1,5 @@
+> Deploy gratuito atual: [docs/DEPLOY_GRATUITO.md](docs/DEPLOY_GRATUITO.md). O Blueprint atual usa Postgres externo Neon. As referências ao banco Render abaixo são históricas.
+
 # Deploy to Render (MVP)
 
 Este repo já vem com `render.yaml` (Blueprint).
@@ -23,14 +25,14 @@ Repo: `https://github.com/RafaelsXavi/Projeto-SaborReal`
 Rode nessa ordem:
 
 1. Migrations:
-- `node apps/api/dist/scripts/migrate.js`
+- `node apps/api/dist/src/scripts/migrate.js`
 
 2. Seed do catálogo:
-- `node apps/api/dist/scripts/seed-catalog.js`
+- `node apps/api/dist/src/scripts/seed-catalog.js`
 
 3. Criar admin (1x):
 - setar `BOOTSTRAP_ADMIN_IDENTIFIER` e `BOOTSTRAP_ADMIN_PASSWORD` (temporário)
-- `node apps/api/dist/scripts/bootstrap-users.js`
+- `node apps/api/dist/src/scripts/bootstrap-users.js`
 - remover `BOOTSTRAP_ADMIN_PASSWORD` depois de validar o login
 
 ## 4) Validar (go/no-go)
@@ -39,3 +41,4 @@ Rode nessa ordem:
 - `GET https://<api>/healthz/readyz` → 200
 - Web: `https://<web>/#/menu`
 - Admin: `#/admin` | Motoboy: `#/motoboy`
+

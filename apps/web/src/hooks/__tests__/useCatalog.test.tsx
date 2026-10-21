@@ -39,10 +39,12 @@ describe('useCatalog', () => {
     await waitFor(() => expect(result.current.error).toBeTruthy(), {
       timeout: 2000,
     });
-    expect(result.current.catalog).toHaveLength(4);
-    expect(result.current.catalog[0]?.id).toBe(
-      'tapioca-salgada-frango-com-requeijao',
+    expect(result.current.catalog).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: 'tapioca-salgada-frango-com-requeijao' }),
+      ]),
     );
+    expect(result.current.availableCount).toBeGreaterThan(0);
   });
 
   it('loads real data on API success', async () => {

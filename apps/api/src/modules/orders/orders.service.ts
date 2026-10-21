@@ -1,9 +1,9 @@
 import { env } from '../../config/env.js';
 import { getPgPool } from '../../db/postgres.js';
+import { quoteDelivery } from '../delivery/delivery.service.js';
 import { PgOrdersRepo } from './orders.pg.repo.js';
 import { InMemoryOrdersRepo } from './orders.repo.js';
 import type { EnrichedOrder, Order, OrderLine } from './orders.types.js';
-import { quoteDelivery } from '../delivery/delivery.service.js';
 
 type OrdersRepo = {
   placeOrder(input: {
@@ -13,11 +13,13 @@ type OrdersRepo = {
     body: unknown;
     distanceKm?: number | undefined;
     deliveryFee?: number | undefined; // BRL
-    delivery?: {
-      cep: string;
-      number: string;
-      notes?: string | undefined;
-    } | undefined;
+    delivery?:
+      | {
+          cep: string;
+          number: string;
+          notes?: string | undefined;
+        }
+      | undefined;
   }): Promise<{ order: Order; replay: boolean }>;
   listByUser(userId: string): Promise<Order[]>;
   listAll(): Promise<Order[]>;
@@ -71,6 +73,7 @@ function resolveRepo(): OrdersRepo {
       updateStatus: async (input) => mem.updateStatus(input),
       cancelOrder: async (input) => mem.cancelOrder(input),
       completeByMotoboy: async (input) => mem.completeByMotoboy(input),
+      getMotoboyStats: async (motoboyId) => mem.getMotoboyStats(motoboyId),
     };
 
     const wrap =
@@ -172,11 +175,13 @@ export async function placeOrder(input: {
   idempotencyKey: string;
   body: unknown;
   distanceKm?: number | undefined;
-  delivery?: {
-    cep: string;
-    number: string;
-    notes?: string | undefined;
-  } | undefined;
+  delivery?:
+    | {
+        cep: string;
+        number: string;
+        notes?: string | undefined;
+      }
+    | undefined;
 }) {
   if (input.delivery) {
     const q = await quoteDelivery({

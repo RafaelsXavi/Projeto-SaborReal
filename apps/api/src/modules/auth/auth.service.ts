@@ -9,9 +9,9 @@ export type SessionUser = { userId: string; role: Role };
 export function cookieSecurityOptions(): CookieOptions {
   const secure = env.NODE_ENV === 'production';
   const base: CookieOptions = { secure, path: '/' };
-  (base as any).sameSite = env.COOKIE_SAMESITE;
+  base.sameSite = env.COOKIE_SAMESITE;
   if (typeof env.COOKIE_DOMAIN === 'string' && env.COOKIE_DOMAIN.trim()) {
-    (base as any).domain = env.COOKIE_DOMAIN.trim();
+    base.domain = env.COOKIE_DOMAIN.trim();
   }
   return base;
 }

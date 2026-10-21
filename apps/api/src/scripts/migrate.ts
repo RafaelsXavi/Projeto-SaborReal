@@ -1,5 +1,6 @@
 import 'dotenv/config';
 import { createHash } from 'node:crypto';
+import { existsSync } from 'node:fs';
 import { readdir, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -48,8 +49,11 @@ async function main() {
       await ensureMigrationsTable(client);
       const applied = await getApplied(client);
 
+      const sourceMigrations = new URL('../../migrations', import.meta.url);
       const migrationsDir = fileURLToPath(
-        new URL('../../migrations', import.meta.url),
+        existsSync(sourceMigrations)
+          ? sourceMigrations
+          : new URL('../../../migrations', import.meta.url),
       );
       const files = (await readdir(migrationsDir))
         .filter((f) => f.endsWith('.sql'))

@@ -44,10 +44,7 @@ const envSchema = z
     REFRESH_TOKEN_TTL_DAYS: z.coerce.number().int().min(1).default(30),
     REFRESH_TOKEN_COOKIE_NAME: z.string().default('sr_rt'),
     CSRF_COOKIE_NAME: z.string().default('sr_csrf'),
-    COOKIE_SAMESITE: z
-      .enum(['lax', 'strict', 'none'])
-      .optional()
-      .transform((v) => (typeof v === 'string' ? v.toLowerCase() : v)),
+    COOKIE_SAMESITE: z.enum(['lax', 'strict', 'none']).optional(),
     COOKIE_DOMAIN: z.string().optional(),
     DEV_AUTH_ENABLED: boolFromString.optional(),
 

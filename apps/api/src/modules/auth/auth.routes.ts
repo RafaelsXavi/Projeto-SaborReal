@@ -28,7 +28,12 @@ const authLimiter = rateLimit({
   limit: 10, // Limit each IP to 10 requests per `window` (here, per 15 minutes)
   standardHeaders: true,
   legacyHeaders: false,
-  message: { error: { code: 'TOO_MANY_REQUESTS', message: 'Too many login attempts, please try again later.' } }
+  message: {
+    error: {
+      code: 'TOO_MANY_REQUESTS',
+      message: 'Too many login attempts, please try again later.',
+    },
+  },
 });
 
 const identifierSchema = z
@@ -54,8 +59,13 @@ const devCreateUserSchema = z.object({
   role: z.enum(ROLES),
 });
 
-authRouter.post('/register', authLimiter as any, validateBody(registerSchema), register);
-authRouter.post('/login', authLimiter as any, validateBody(loginSchema), login);
+authRouter.post(
+  '/register',
+  authLimiter,
+  validateBody(registerSchema),
+  register,
+);
+authRouter.post('/login', authLimiter, validateBody(loginSchema), login);
 authRouter.post('/refresh', refresh);
 authRouter.post('/logout', logout);
 authRouter.get('/session', session);

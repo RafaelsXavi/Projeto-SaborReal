@@ -1,4 +1,4 @@
-﻿import { Pool } from 'pg';
+import { Pool } from 'pg';
 
 import { env } from '../config/env.js';
 
@@ -10,7 +10,9 @@ export function getPgPool(): Pool | null {
 
   pool = new Pool({
     connectionString: env.DATABASE_URL,
-    max: 10,
+    max: process.env.VERCEL ? 2 : 10,
+    connectionTimeoutMillis: 10000,
+    idleTimeoutMillis: 10000,
     ssl: env.PG_SSL
       ? { rejectUnauthorized: env.PG_SSL_REJECT_UNAUTHORIZED }
       : undefined,

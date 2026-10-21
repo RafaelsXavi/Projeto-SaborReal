@@ -1,14 +1,14 @@
 import assert from 'node:assert/strict';
-import { resolve } from 'node:path';
 import crypto from 'node:crypto';
+import { resolve } from 'node:path';
 import dotenv from 'dotenv';
 
 if (!process.env.DATABASE_URL) {
   dotenv.config({ path: resolve(process.cwd(), '../../.env') });
 }
 
-const { createApp } = await import('../dist/app.js');
-const { env } = await import('../dist/config/env.js');
+const { createApp } = await import('../dist/src/app.js');
+const { env } = await import('../dist/src/config/env.js');
 
 function parseSetCookie(setCookie) {
   const [pair] = setCookie.split(';', 1);
@@ -99,103 +99,118 @@ async function createAndLogin(baseUrl, { identifier, password }) {
   return { jar, csrf };
 }
 
-await run('Admin API E2E: Security Restrictions & Motoboy/Catalog CRUD', async () => {
-  if (process.env.SMOKE_WITH_DB !== 'true') {
-    console.log('skip - set SMOKE_WITH_DB=true to run');
-    return;
-  }
-
-  requireEnv('DATABASE_URL');
-
-  if (process.env.DEV_AUTH_ENABLED !== 'true' && env.DEV_AUTH_ENABLED !== true) {
-    console.log('skip - DEV_AUTH_ENABLED must be true to run');
-    return;
-  }
-
-  await withServer(async (baseUrl) => {
-    const admin = {
-      identifier: `admin-${crypto.randomUUID()}@example.com`,
-      password: 'testpassword123',
-      role: 'admin',
-    };
-    const customer = {
-      identifier: `customer-${crypto.randomUUID()}@example.com`,
-      password: 'testpassword123',
-    };
-
-    // Create accounts
-    {
-      const resC = await fetch(`${baseUrl}/v1/auth/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(customer),
-      });
-      assert.equal(resC.status, 201);
-
-      const resA = await fetch(`${baseUrl}/v1/auth/dev-create-user`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(admin),
-      });
-      assert.equal(resA.status, 201);
+await run(
+  'Admin API E2E: Security Restrictions & Motoboy/Catalog CRUD',
+  async () => {
+    if (process.env.SMOKE_WITH_DB !== 'true') {
+      console.log('skip - set SMOKE_WITH_DB=true to run');
+      return;
     }
 
-    const customerSession = await createAndLogin(baseUrl, customer);
-    const adminSession = await createAndLogin(baseUrl, admin);
+    requireEnv('DATABASE_URL');
 
-    // 1. Security check: Customer cannot access Admin Motoboys
-    {
-      const res = await fetch(`${baseUrl}/v1/admin/motoboys`, {
-        headers: { Cookie: customerSession.jar.header() },
-      });
-      assert.equal(res.status, 403, 'Customer should not access admin routes');
+    if (
+      process.env.DEV_AUTH_ENABLED !== 'true' &&
+      env.DEV_AUTH_ENABLED !== true
+    ) {
+      console.log('skip - DEV_AUTH_ENABLED must be true to run');
+      return;
     }
 
-    // 2. Admin creates a Motoboy
-    let motoboyId = '';
-    {
-      const payload = { identifier: `moto-${crypto.randomUUID()}@example.com`, password: 'motopassword123', name: 'Moto Teste', plate: 'ABC-1234' };
-      const res = await fetch(`${baseUrl}/v1/admin/motoboys`, {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          Cookie: adminSession.jar.header(),
-          'X-CSRF-Token': adminSession.csrf
-        },
-        body: JSON.stringify(payload)
-      });
-      assert.equal(res.status, 201);
-      const data = await res.json();
-      assert.equal(data.ok, true);
-      motoboyId = data.user?.userId || data.motoboy?.id;
-    }
+    await withServer(async (baseUrl) => {
+      const admin = {
+        identifier: `admin-${crypto.randomUUID()}@example.com`,
+        password: 'testpassword123',
+        role: 'admin',
+      };
+      const customer = {
+        identifier: `customer-${crypto.randomUUID()}@example.com`,
+        password: 'testpassword123',
+      };
 
-    // 3. Admin creates a Catalog Product
-    let productId = '';
-    {
-       const payload = {
-         id: `prod-${crypto.randomUUID().slice(0,8)}`,
-         name: 'Hambúrguer de Teste',
-         description: 'Pão, carne e queijo.',
-         priceCents: 2500,
-         categoryName: 'Lanches',
-         imageUrl: '',
-         available: true
-       };
-       const res = await fetch(`${baseUrl}/v1/admin/catalog`, {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          Cookie: adminSession.jar.header(),
-          'X-CSRF-Token': adminSession.csrf
-        },
-        body: JSON.stringify(payload)
-      });
-      // Allow 201 or 400 (if category doesnt exist in test DB). Let's log it.
-      if (res.status === 201) {
-         const data = await res.json();
-         productId = data.item?.id;
+      // Create accounts
+      {
+        const resC = await fetch(`${baseUrl}/v1/auth/register`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(customer),
+        });
+        assert.equal(resC.status, 201);
+
+        const resA = await fetch(`${baseUrl}/v1/auth/dev-create-user`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(admin),
+        });
+        assert.equal(resA.status, 201);
       }
-    }
-  });
-});
+
+      const customerSession = await createAndLogin(baseUrl, customer);
+      const adminSession = await createAndLogin(baseUrl, admin);
+
+      // 1. Security check: Customer cannot access Admin Motoboys
+      {
+        const res = await fetch(`${baseUrl}/v1/admin/motoboys`, {
+          headers: { Cookie: customerSession.jar.header() },
+        });
+        assert.equal(
+          res.status,
+          403,
+          'Customer should not access admin routes',
+        );
+      }
+
+      // 2. Admin creates a Motoboy
+      let _motoboyId = '';
+      {
+        const payload = {
+          identifier: `moto-${crypto.randomUUID()}@example.com`,
+          password: 'motopassword123',
+          name: 'Moto Teste',
+          plate: 'ABC-1234',
+        };
+        const res = await fetch(`${baseUrl}/v1/admin/motoboys`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Cookie: adminSession.jar.header(),
+            'X-CSRF-Token': adminSession.csrf,
+          },
+          body: JSON.stringify(payload),
+        });
+        assert.equal(res.status, 201);
+        const data = await res.json();
+        assert.equal(data.ok, true);
+        _motoboyId = data.user?.userId || data.motoboy?.id;
+      }
+
+      // 3. Admin creates a Catalog Product
+      let _productId = '';
+      {
+        const payload = {
+          id: `prod-${crypto.randomUUID().slice(0, 8)}`,
+          name: 'Hambúrguer de Teste',
+          description: 'Pão, carne e queijo.',
+          priceCents: 2500,
+          categoryName: 'Lanches',
+          imageUrl: '',
+          available: true,
+        };
+        const res = await fetch(`${baseUrl}/v1/admin/catalog`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Cookie: adminSession.jar.header(),
+            'X-CSRF-Token': adminSession.csrf,
+          },
+          body: JSON.stringify(payload),
+        });
+        // Allow 201 or 400 (if category doesnt exist in test DB). Let's log it.
+        if (res.status === 201) {
+          const data = await res.json();
+          _productId = data.item?.id;
+        }
+      }
+    });
+  },
+);

@@ -682,13 +682,14 @@ export async function seedCatalog() {
 
   const pgSslRaw = (process.env.PG_SSL ?? '').trim().toLowerCase();
   const pgSsl = pgSslRaw === 'true' || pgSslRaw === '1';
-  const rejectUnauthorizedRaw = (process.env.PG_SSL_REJECT_UNAUTHORIZED ?? 'true')
+  const rejectUnauthorizedRaw = (
+    process.env.PG_SSL_REJECT_UNAUTHORIZED ?? 'true'
+  )
     .trim()
     .toLowerCase();
-  const rejectUnauthorized =
+  const rejectUnauthorized = !(
     rejectUnauthorizedRaw === 'false' || rejectUnauthorizedRaw === '0'
-      ? false
-      : true;
+  );
 
   // Quick sanity check: make sure ids look slug-like.
   for (const it of items) {

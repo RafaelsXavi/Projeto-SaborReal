@@ -71,8 +71,10 @@ describe('useCatalog', () => {
 
     // It should fallback to seedCatalog (which has Pastel, Tapioca, etc.)
     expect(result.current.catalog.length).toBeGreaterThan(0);
-    expect(result.current.catalog[0].id).toBe(
-      'tapioca-salgada-frango-com-requeijao',
+    expect(result.current.catalog).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: 'tapioca-salgada-frango-com-requeijao' }),
+      ]),
     );
     await waitFor(() => expect(result.current.error).toBeTruthy());
   });

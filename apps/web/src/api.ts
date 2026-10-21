@@ -91,7 +91,7 @@ export function getCsrfToken() {
 
 export function apiBaseUrl() {
   const explicit = import.meta.env.VITE_API_URL as string | undefined;
-  if (explicit && explicit.trim()) return explicit;
+  if (explicit?.trim()) return explicit;
   if (!import.meta.env.DEV && typeof window !== 'undefined') {
     return window.location.origin;
   }
@@ -136,7 +136,7 @@ export async function apiFetch(
       [502, 503, 504].includes(res.status)
     ) {
       attempt++;
-      const delay = 500 * Math.pow(2, attempt); // 1s, 2s
+      const delay = 500 * 2 ** attempt; // 1s, 2s
       await new Promise((resolve) => setTimeout(resolve, delay));
       continue;
     }

@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AnimatePresence, motion } from 'framer-motion';
 import React, { Suspense, useEffect } from 'react';
+import { DeveloperSignature } from './components/DeveloperSignature';
 import { useHashRoute } from './hooks/useHashRoute';
 import { navigate } from './router';
 
@@ -165,6 +166,7 @@ export default function App() {
             <Suspense fallback={<LoadingScreen />}>{page}</Suspense>
           </motion.div>
         </AnimatePresence>
+        <DeveloperSignature />
       </ErrorBoundary>
       {ReactQueryDevtools ? (
         <Suspense fallback={null}>

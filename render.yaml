@@ -1,21 +1,17 @@
-databases:
-  - name: saborreal-postgres
-    region: oregon  # ajuste para a mesma regiao do seu Postgres (ex.: oregon)
-    plan: starter
-
 services:
   - type: web
     name: saborreal-api
-    env: docker
+    runtime: docker
+    plan: free
     dockerfilePath: ./apps/api/Dockerfile
     repo: https://github.com/RafaelsXavi/Projeto-SaborReal
     envVars:
       - key: NODE_ENV
         value: production
       - key: DATABASE_URL
-        fromDatabase:
-          name: saborreal-postgres
-          property: connectionString
+        sync: false # Postgres externo gratuito (Neon); informar no painel
+      - key: PG_SSL
+        value: 'true'
       - key: JWT_SECRET
         generateValue: true  # Or paste the generated one
       - key: CORS_ORIGINS
@@ -28,11 +24,10 @@ services:
       # - key: PG_SSL
       #   value: 'true'
     healthCheckPath: /healthz
-    port: 10000  # Render auto-injects $PORT
 
   - type: web
     name: saborreal-web
-    env: static
+    runtime: static
     repo: https://github.com/RafaelsXavi/Projeto-SaborReal
     envVars:
       - key: NODE_VERSION
@@ -40,4 +35,4 @@ services:
       - key: VITE_API_URL
         value: https://saborreal-api.onrender.com
     buildCommand: npm ci && npm -w @saborreal/web run build
-    publishPath: apps/web/dist
+    staticPublishPath: apps/web/dist

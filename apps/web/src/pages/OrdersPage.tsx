@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { apiFetch, userFriendlyError } from '../api';
 import { MaterialIcon } from '../components/MaterialIcon';
 import { Navigation } from '../components/Navigation';
@@ -57,19 +57,22 @@ export function OrdersPage() {
     return m;
   }, [catalog]);
 
-  const fetchOrders = useCallback(async (isInitial = false) => {
-    if (!user) return;
-    if (isInitial) setLoading(true);
-    try {
-      const res = await apiFetch('/v1/me/orders');
-      const data = (await res.json()) as { ok: boolean; orders: Order[] };
-      setOrders(Array.isArray(data.orders) ? data.orders : []);
-    } catch (e: unknown) {
-      if (isInitial) setError(userFriendlyError(e));
-    } finally {
-      if (isInitial) setLoading(false);
-    }
-  }, [user]);
+  const fetchOrders = useCallback(
+    async (isInitial = false) => {
+      if (!user) return;
+      if (isInitial) setLoading(true);
+      try {
+        const res = await apiFetch('/v1/me/orders');
+        const data = (await res.json()) as { ok: boolean; orders: Order[] };
+        setOrders(Array.isArray(data.orders) ? data.orders : []);
+      } catch (e: unknown) {
+        if (isInitial) setError(userFriendlyError(e));
+      } finally {
+        if (isInitial) setLoading(false);
+      }
+    },
+    [user],
+  );
 
   useEffect(() => {
     fetchOrders(true);
@@ -247,4 +250,3 @@ export function OrdersPage() {
     </div>
   );
 }
-

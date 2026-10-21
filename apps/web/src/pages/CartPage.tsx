@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { apiFetch, userFriendlyError } from '../api';
 import { MaterialIcon } from '../components/MaterialIcon';
 import { Navigation } from '../components/Navigation';
@@ -16,10 +16,11 @@ export function CartPage() {
   const [cep, setCep] = useState('');
   const [number, setNumber] = useState('');
   const [notes, setNotes] = useState('');
-  const [quote, setQuote] = useState<
-    | { distanceKm: number; feeBrl: number; address: string }
-    | null
-  >(null);
+  const [quote, setQuote] = useState<{
+    distanceKm: number;
+    feeBrl: number;
+    address: string;
+  } | null>(null);
   const [quoting, setQuoting] = useState(false);
 
   const deliveryFeeCents = useMemo(() => {
@@ -183,10 +184,14 @@ export function CartPage() {
                 <div className="space-y-4">
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <div>
-                      <label className="mb-1 block text-sm font-semibold text-slate-600 dark:text-slate-400">
+                      <label
+                        htmlFor="delivery-cep"
+                        className="mb-1 block text-sm font-semibold text-slate-600 dark:text-slate-400"
+                      >
                         CEP
                       </label>
                       <input
+                        id="delivery-cep"
                         className="h-11 w-full rounded-lg border border-slate-200 bg-white px-4 text-sm outline-none transition-all focus:ring-2 focus:ring-primary dark:border-slate-700 dark:bg-slate-800"
                         value={cep}
                         onChange={(e) => setCep(e.target.value)}
@@ -195,10 +200,14 @@ export function CartPage() {
                       />
                     </div>
                     <div>
-                      <label className="mb-1 block text-sm font-semibold text-slate-600 dark:text-slate-400">
+                      <label
+                        htmlFor="delivery-number"
+                        className="mb-1 block text-sm font-semibold text-slate-600 dark:text-slate-400"
+                      >
                         Número
                       </label>
                       <input
+                        id="delivery-number"
                         className="h-11 w-full rounded-lg border border-slate-200 bg-white px-4 text-sm outline-none transition-all focus:ring-2 focus:ring-primary dark:border-slate-700 dark:bg-slate-800"
                         value={number}
                         onChange={(e) => setNumber(e.target.value)}
@@ -208,10 +217,14 @@ export function CartPage() {
                   </div>
 
                   <div>
-                    <label className="mb-1 block text-sm font-semibold text-slate-600 dark:text-slate-400">
+                    <label
+                      htmlFor="delivery-notes"
+                      className="mb-1 block text-sm font-semibold text-slate-600 dark:text-slate-400"
+                    >
                       Observação (opcional)
                     </label>
                     <textarea
+                      id="delivery-notes"
                       className="min-h-20 w-full resize-none rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition-all focus:ring-2 focus:ring-primary dark:border-slate-700 dark:bg-slate-800"
                       value={notes}
                       onChange={(e) => setNotes(e.target.value)}

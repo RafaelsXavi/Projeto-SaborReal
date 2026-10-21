@@ -44,7 +44,7 @@ healthRouter.get('/readyz', async (_req, res, next) => {
       logger.error(
         {
           ...details,
-          requestId: (res as any).get?.('X-Request-Id'),
+          requestId: res.get?.('X-Request-Id'),
         },
         'readiness_failed',
       );
@@ -55,8 +55,8 @@ healthRouter.get('/readyz', async (_req, res, next) => {
           ? env.READYZ_TOKEN
           : null;
       const supplied =
-        typeof (_req as any).query?.token === 'string'
-          ? ((_req as any).query.token as string)
+        typeof _req.query?.token === 'string'
+          ? (_req.query.token as string)
           : null;
       if (token && supplied === token) {
         return res.status(503).json(details);

@@ -1,6 +1,6 @@
 import { createHash, randomUUID } from 'node:crypto';
-import type { Order, OrderLine } from './orders.types.js';
 import { env } from '../../config/env.js';
+import type { Order, OrderLine } from './orders.types.js';
 
 type IdempotencyRecord = { key: string; bodyHash: string; orderId: string };
 
@@ -75,7 +75,9 @@ export class InMemoryOrdersRepo {
     body: unknown;
     distanceKm?: number | undefined;
     deliveryFee?: number | undefined;
-    delivery?: { cep: string; number: string; notes?: string | undefined } | undefined;
+    delivery?:
+      | { cep: string; number: string; notes?: string | undefined }
+      | undefined;
   }): { order: Order; replay: boolean } {
     const idKey = `${input.userId}:${input.idempotencyKey}`;
     const bodyHash = hashBody(input.body);
@@ -93,7 +95,8 @@ export class InMemoryOrdersRepo {
     const id = randomUUID();
     const distanceKm = input.distanceKm ?? 0;
     const deliveryFee =
-      input.deliveryFee ?? Number((distanceKm * env.DELIVERY_FEE_PER_KM).toFixed(2));
+      input.deliveryFee ??
+      Number((distanceKm * env.DELIVERY_FEE_PER_KM).toFixed(2));
 
     const order: Order = {
       id,
@@ -201,14 +204,17 @@ export class InMemoryOrdersRepo {
     completedToday: number;
     earningsTodayCents: number;
   } {
-    const today = new Date().toISOString().split('T')[0];
+    const today = new Date().toISOString().slice(0, 10);
     const completed = this.listAll().filter(
       (o) =>
         o.motoboyId === motoboyId &&
         o.status === 'COMPLETED' &&
         o.createdAt.startsWith(today),
     );
-    const earnings = completed.reduce((acc, o) => acc + (o.deliveryFee ?? 0), 0);
+    const earnings = completed.reduce(
+      (acc, o) => acc + (o.deliveryFee ?? 0),
+      0,
+    );
     return {
       completedToday: completed.length,
       earningsTodayCents: Math.round(earnings * 100),

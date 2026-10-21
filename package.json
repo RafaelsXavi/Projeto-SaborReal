@@ -9,8 +9,8 @@
   "scripts": {
     "dev": "pnpm -r --parallel dev",
     "dev:api": "pnpm --filter @saborreal/api dev",
-    "build": "pnpm -r build",
-    "typecheck": "pnpm -r typecheck",
+    "build": "npm -w @saborreal/shared run build && npm -w @saborreal/api run build --ignore-scripts && npm -w @saborreal/web run build",
+    "typecheck": "npm -ws --if-present run typecheck",
     "lint": "biome check .",
     "format": "biome format . --write",
     "test": "npm -w @saborreal/api test",

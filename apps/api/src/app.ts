@@ -2,7 +2,7 @@ import type { IncomingMessage } from 'node:http';
 import path from 'node:path';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
-import express, { type Request, type RequestHandler } from 'express';
+import express, { type RequestHandler } from 'express';
 import rateLimit from 'express-rate-limit';
 import helmet from 'helmet';
 import { pinoHttp } from 'pino-http';
@@ -25,7 +25,7 @@ export function createApp() {
   // pino-http types are based on IncomingMessage/ServerResponse; at runtime this is the Express request.
   const httpLogger = pinoHttp({
     logger,
-    genReqId: (req: IncomingMessage) => (req as any).id,
+    genReqId: (req: IncomingMessage & { id?: string }) => req.id,
   }) as unknown as RequestHandler;
   app.use(httpLogger);
 
@@ -40,7 +40,11 @@ export function createApp() {
           frameAncestors: ["'self'"],
           objectSrc: ["'none'"],
           scriptSrc: ["'self'"],
-          styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+          styleSrc: [
+            "'self'",
+            "'unsafe-inline'",
+            'https://fonts.googleapis.com',
+          ],
           fontSrc: ["'self'", 'https://fonts.gstatic.com'],
           imgSrc: [
             "'self'",

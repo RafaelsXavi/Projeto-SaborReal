@@ -20,14 +20,13 @@ function safeCompare(a: string, b: string): boolean {
 
 export function jwtAuth(): RequestHandler {
   return (req, res, next) => {
-    const authHeader =
-      (req as any).get?.('authorization') ?? req.headers?.authorization;
+    const authHeader = req.get?.('authorization') ?? req.headers?.authorization;
     const bearer = bearerFromAuthHeader(
       Array.isArray(authHeader) ? authHeader[0] : authHeader,
     );
     const cookieToken =
-      typeof (req as any).cookies?.[env.ACCESS_TOKEN_COOKIE_NAME] === 'string'
-        ? ((req as any).cookies[env.ACCESS_TOKEN_COOKIE_NAME] as string)
+      typeof req.cookies?.[env.ACCESS_TOKEN_COOKIE_NAME] === 'string'
+        ? (req.cookies[env.ACCESS_TOKEN_COOKIE_NAME] as string)
         : null;
     const token = bearer ?? cookieToken;
 
@@ -39,7 +38,7 @@ export function jwtAuth(): RequestHandler {
     } catch (_err) {
       // Treat invalid/expired tokens as anonymous; protected routes will reject.
       if (!bearer && cookieToken) {
-        (res as any).clearCookie(env.ACCESS_TOKEN_COOKIE_NAME, { path: '/' });
+        res.clearCookie(env.ACCESS_TOKEN_COOKIE_NAME, { path: '/' });
       }
       delete req.auth;
     }
@@ -53,24 +52,22 @@ export function csrfProtection(): RequestHandler {
   return (req, _res, next) => {
     if (!unsafe.has(req.method.toUpperCase())) return next();
 
-    const authHeader =
-      (req as any).get?.('authorization') ?? req.headers?.authorization;
+    const authHeader = req.get?.('authorization') ?? req.headers?.authorization;
     const bearer = bearerFromAuthHeader(
       Array.isArray(authHeader) ? authHeader[0] : authHeader,
     );
     if (bearer) return next();
 
     const hasCookieAuth =
-      Boolean((req as any).cookies?.[env.ACCESS_TOKEN_COOKIE_NAME]) ||
-      Boolean((req as any).cookies?.[env.REFRESH_TOKEN_COOKIE_NAME]);
+      Boolean(req.cookies?.[env.ACCESS_TOKEN_COOKIE_NAME]) ||
+      Boolean(req.cookies?.[env.REFRESH_TOKEN_COOKIE_NAME]);
     if (!hasCookieAuth) return next();
 
     const csrfCookie =
-      typeof (req as any).cookies?.[env.CSRF_COOKIE_NAME] === 'string'
-        ? ((req as any).cookies[env.CSRF_COOKIE_NAME] as string)
+      typeof req.cookies?.[env.CSRF_COOKIE_NAME] === 'string'
+        ? (req.cookies[env.CSRF_COOKIE_NAME] as string)
         : null;
-    const csrfRaw =
-      (req as any).get?.('x-csrf-token') ?? req.headers?.['x-csrf-token'];
+    const csrfRaw = req.get?.('x-csrf-token') ?? req.headers?.['x-csrf-token'];
     const csrfHeader =
       (Array.isArray(csrfRaw) ? csrfRaw[0] : csrfRaw)?.trim?.() ?? null;
 
