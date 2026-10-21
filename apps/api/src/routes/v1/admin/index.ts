@@ -1,4 +1,3 @@
-import path from 'node:path';
 import {
   createCatalogItemSchema,
   createMotoboySchema,
@@ -6,7 +5,6 @@ import {
   updateMotoboySchema,
 } from '@saborreal/shared';
 import { Router } from 'express';
-import multer from 'multer';
 import { requireRole } from '../../../middleware/auth.js';
 import { AppError } from '../../../middleware/error.js';
 import { validateBody } from '../../../middleware/validate.js';
@@ -87,4 +85,3 @@ adminRouter.patch(
   adminUpdateCatalogItem,
 );
 adminRouter.delete('/catalog/:id', adminDeleteCatalogItem);
-

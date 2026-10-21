@@ -9,7 +9,7 @@ if (!process.env.DATABASE_URL) {
   dotenv.config({ path: resolve(process.cwd(), '../../.env') });
 }
 
-const { createApp } = await import('../dist/app.js');
+const { createApp } = await import('../dist/src/app.js');
 
 async function withServer(fn) {
   const app = createApp();

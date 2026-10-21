@@ -47,7 +47,10 @@ async function viaCep(cep: string): Promise<ViaCepResponse> {
   });
 }
 
-async function geocodeAddress(query: string, logLabel = 'address'): Promise<Coordinates> {
+async function geocodeAddress(
+  query: string,
+  logLabel = 'address',
+): Promise<Coordinates> {
   const q = encodeURIComponent(query);
   const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${q}`;
 
@@ -63,7 +66,7 @@ async function geocodeAddress(query: string, logLabel = 'address'): Promise<Coor
 
     const first = result[0];
     if (!first) {
-      console.warn(`[Delivery] geocode failed for ${logLabel}: ${query}`);
+      console.warn(`[Delivery] geocode failed for ${logLabel}`);
       throw new Error('GEOCODE_NOT_FOUND');
     }
     const lat = Number(first.lat);
@@ -74,28 +77,31 @@ async function geocodeAddress(query: string, logLabel = 'address'): Promise<Coor
     return { lat, lng };
   } catch (err) {
     if (err instanceof Error && err.message === 'GEOCODE_NOT_FOUND') throw err;
-    console.error(`[Delivery] nominatim error for ${query}:`, err);
+    console.error(`[Delivery] nominatim error for ${logLabel}`);
     throw new Error('GEOCODE_FAILED');
   }
 }
 
 async function osrmDrivingKm(a: Coordinates, b: Coordinates): Promise<number> {
-  const url = `https://router.project-osrm.org/route/v1/driving/${a.lng},${a.lat};${b.lng},${a.lat}?overview=false`;
+  const url = `https://router.project-osrm.org/route/v1/driving/${a.lng},${a.lat};${b.lng},${b.lat}?overview=false`;
   try {
-    const body = await cached(`osrm:${a.lng},${a.lat}:${b.lng},${b.lat}`, async () => {
-      return await fetchJson<{
-        routes?: Array<{ distance: number }>;
-        code?: string;
-      }>(url, { headers: { Accept: 'application/json' } });
-    });
+    const body = await cached(
+      `osrm:${a.lng},${a.lat}:${b.lng},${b.lat}`,
+      async () => {
+        return await fetchJson<{
+          routes?: Array<{ distance: number }>;
+          code?: string;
+        }>(url, { headers: { Accept: 'application/json' } });
+      },
+    );
 
     const distMeters = body.routes?.[0]?.distance;
     if (typeof distMeters !== 'number' || !Number.isFinite(distMeters)) {
       throw new Error('ROUTE_NOT_FOUND');
     }
     return distMeters / 1000;
-  } catch (err) {
-    console.error('[Delivery] osrm error:', err);
+  } catch {
+    console.error('[Delivery] routing service unavailable');
     // Fallback to Haversine-like distance (+30% for driving estimation) if OSRM is down
     const dy = a.lat - b.lat;
     const dx = a.lng - b.lng;
@@ -138,17 +144,14 @@ async function restaurantCoords(): Promise<Coordinates> {
 
   try {
     cachedRestaurantCoords = await geocodeAddress(addr, 'restaurant');
-  } catch (err) {
+  } catch (_err) {
     // Ultimate fallback for restaurant (SP center approx)
     cachedRestaurantCoords = { lat: -23.5505, lng: -46.6333 };
   }
   return cachedRestaurantCoords;
 }
 
-export async function quoteDelivery(input: {
-  cep: string;
-  number: string;
-}) {
+export async function quoteDelivery(input: { cep: string; number: string }) {
   const cep = normalizeCep(input.cep);
   if (!/^\d{8}$/.test(cep)) throw new Error('INVALID_CEP');
 
@@ -176,13 +179,14 @@ export async function quoteDelivery(input: {
     const fallbackLocation = `${addr.localidade}, ${addr.uf}, Brasil`;
     try {
       cust = await geocodeAddress(fallbackLocation, 'fallback-city');
-      console.log(`[Delivery] used city-level fallback for ${cep}`);
+      console.log('[Delivery] used city-level fallback');
     } catch {
       throw new Error('GEOCODE_NOT_FOUND');
     }
   }
 
-  const restCoords = rest.status === 'fulfilled' ? rest.value : { lat: -23.5505, lng: -46.6333 };
+  const restCoords =
+    rest.status === 'fulfilled' ? rest.value : { lat: -23.5505, lng: -46.6333 };
 
   const distanceKm = await osrmDrivingKm(restCoords, cust);
   const fee = round2(distanceKm * env.DELIVERY_FEE_PER_KM);
@@ -193,4 +197,3 @@ export async function quoteDelivery(input: {
     customerAddress,
   };
 }
-

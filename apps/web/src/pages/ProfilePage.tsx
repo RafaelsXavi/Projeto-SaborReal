@@ -64,7 +64,8 @@ export function ProfilePage() {
           <div className="rounded-xl border border-primary/5 bg-white p-6 dark:bg-slate-800/50">
             <h2 className="text-xl font-extrabold">Você não está logado</h2>
             <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-              Entre para ver seus pedidos e acessar áreas restritas (ADM/Motoboy).
+              Entre para ver seus pedidos e acessar áreas restritas
+              (ADM/Motoboy).
             </p>
             <button
               className="mt-4 w-full rounded-lg bg-primary py-3 font-bold text-white transition-colors hover:bg-primary/90"
@@ -121,4 +122,3 @@ export function ProfilePage() {
     </div>
   );
 }
-

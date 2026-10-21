@@ -1,4 +1,6 @@
-﻿# Projeto SaborReal
+> Deploy atual: [Vercel + Neon](docs/DEPLOY_VERCEL_NEON.md), usando a raiz do repositório para frontend e API no mesmo domínio. As instruções Render abaixo são alternativas históricas.
+
+# Projeto SaborReal
 
 Monorepo (workspaces) com uma API Node.js/TypeScript focada em isolamento de superfícies (cliente/admin/motoboy) e segurança por padrão.
 
@@ -155,4 +157,6 @@ O frontend `apps/web` contém um protótipo de telas baseado nos HTMLs de refer�
 - `#/admin` (Admin/Painel de Pedidos)
 
 Tailwind já foi migrado para build-time (sem CDN) em `apps/web` (PostCSS + Tailwind config).
+
+
 

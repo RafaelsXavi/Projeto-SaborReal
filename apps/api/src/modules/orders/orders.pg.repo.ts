@@ -116,7 +116,9 @@ export class PgOrdersRepo {
     body: unknown;
     distanceKm?: number | undefined;
     deliveryFee?: number | undefined;
-    delivery?: { cep: string; number: string; notes?: string | undefined } | undefined;
+    delivery?:
+      | { cep: string; number: string; notes?: string | undefined }
+      | undefined;
   }): Promise<{ order: Order; replay: boolean }> {
     const orderId = randomUUID();
     const bodyHash = hashBody(input.body);
@@ -527,7 +529,10 @@ export class PgOrdersRepo {
   async getMotoboyStats(
     motoboyId: string,
   ): Promise<{ completedToday: number; earningsTodayCents: number }> {
-    const res = await this.pool.query<{ count: string; total_fee: string | null }>(
+    const res = await this.pool.query<{
+      count: string;
+      total_fee: string | null;
+    }>(
       `select count(id) as count,
               sum(delivery_fee) as total_fee
        from orders

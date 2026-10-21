@@ -26,7 +26,16 @@ describe('useAdminCatalog', () => {
   });
 
   const mockData = {
-    items: [{ id: '1', name: 'Product 1', priceCents: 1000, categoryId: 'cat1', categoryName: 'Cat 1', available: true }],
+    items: [
+      {
+        id: '1',
+        name: 'Product 1',
+        priceCents: 1000,
+        categoryId: 'cat1',
+        categoryName: 'Cat 1',
+        available: true,
+      },
+    ],
     categories: [{ id: 'cat1', name: 'Cat 1' }],
   };
 
@@ -51,15 +60,27 @@ describe('useAdminCatalog', () => {
       json: async () => mockData,
     });
 
-    const { result } = renderHook(() => useAdminCatalog(), { wrapper: createWrapper() });
-    
+    const { result } = renderHook(() => useAdminCatalog(), {
+      wrapper: createWrapper(),
+    });
+
     await waitFor(() => expect(result.current.loading).toBe(false));
-    
-    await result.current.create({ name: 'New Item', priceCents: 500, categoryId: 'cat1', available: true } as any);
+
+    await result.current.create({
+      name: 'New Item',
+      priceCents: 500,
+      categoryId: 'cat1',
+      available: true,
+    });
 
     expect(apiFetchMock).toHaveBeenCalledWith('/v1/admin/catalog', {
       method: 'POST',
-      body: JSON.stringify({ name: 'New Item', priceCents: 500, categoryId: 'cat1', available: true }),
+      body: JSON.stringify({
+        name: 'New Item',
+        priceCents: 500,
+        categoryId: 'cat1',
+        available: true,
+      }),
     });
   });
 
@@ -69,10 +90,12 @@ describe('useAdminCatalog', () => {
       json: async () => mockData,
     });
 
-    const { result } = renderHook(() => useAdminCatalog(), { wrapper: createWrapper() });
-    
+    const { result } = renderHook(() => useAdminCatalog(), {
+      wrapper: createWrapper(),
+    });
+
     await waitFor(() => expect(result.current.loading).toBe(false));
-    
+
     await result.current.update({ id: '1', data: { priceCents: 1500 } });
 
     expect(apiFetchMock).toHaveBeenCalledWith('/v1/admin/catalog/1', {
@@ -87,10 +110,12 @@ describe('useAdminCatalog', () => {
       json: async () => mockData,
     });
 
-    const { result } = renderHook(() => useAdminCatalog(), { wrapper: createWrapper() });
-    
+    const { result } = renderHook(() => useAdminCatalog(), {
+      wrapper: createWrapper(),
+    });
+
     await waitFor(() => expect(result.current.loading).toBe(false));
-    
+
     await result.current.remove('1');
 
     expect(apiFetchMock).toHaveBeenCalledWith('/v1/admin/catalog/1', {

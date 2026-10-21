@@ -31,14 +31,14 @@ function addDays(date: Date, days: number) {
 }
 
 function getCookie(req: Request, name: string) {
-  const value = (req as any).cookies?.[name] as unknown;
+  const value = req.cookies?.[name] as unknown;
   return typeof value === 'string' && value.length > 0 ? value : null;
 }
 
 function clearAuthCookies(res: Response) {
-  (res as any).clearCookie(env.ACCESS_TOKEN_COOKIE_NAME, { path: '/' });
-  (res as any).clearCookie(env.REFRESH_TOKEN_COOKIE_NAME, { path: '/v1/auth' });
-  (res as any).clearCookie(env.CSRF_COOKIE_NAME, { path: '/' });
+  res.clearCookie(env.ACCESS_TOKEN_COOKIE_NAME, { path: '/' });
+  res.clearCookie(env.REFRESH_TOKEN_COOKIE_NAME, { path: '/v1/auth' });
+  res.clearCookie(env.CSRF_COOKIE_NAME, { path: '/' });
 }
 
 export const register: RequestHandler = async (req, res, next) => {
@@ -174,7 +174,7 @@ export const login: RequestHandler = async (req, res, next) => {
       userId: user.id,
       tokenHash: hashRefreshToken(refreshToken),
       expiresAt: addDays(new Date(), env.REFRESH_TOKEN_TTL_DAYS),
-      userAgent: (req as any).get?.('user-agent') ?? req.headers?.['user-agent'] ?? null,
+      userAgent: req.get?.('user-agent') ?? req.headers?.['user-agent'] ?? null,
       ip: req.ip ?? null,
     });
 
@@ -242,7 +242,7 @@ export const refresh: RequestHandler = async (req, res, next) => {
       userId: user.id,
       tokenHash: hashRefreshToken(nextRefreshRaw),
       expiresAt: addDays(now, env.REFRESH_TOKEN_TTL_DAYS),
-      userAgent: (req as any).get?.('user-agent') ?? req.headers?.['user-agent'] ?? null,
+      userAgent: req.get?.('user-agent') ?? req.headers?.['user-agent'] ?? null,
       ip: req.ip ?? null,
     });
 
@@ -303,12 +303,12 @@ export const logout: RequestHandler = async (req, res, next) => {
 export const session: RequestHandler = (req, res) => {
   if (!req.auth) return res.json({ authenticated: false });
   const existing =
-    typeof (req as any).cookies?.[env.CSRF_COOKIE_NAME] === 'string'
-      ? ((req as any).cookies[env.CSRF_COOKIE_NAME] as string)
+    typeof req.cookies?.[env.CSRF_COOKIE_NAME] === 'string'
+      ? (req.cookies[env.CSRF_COOKIE_NAME] as string)
       : null;
   const csrfToken = existing ?? newCsrfToken();
   if (!existing) {
-    (res as any).cookie(env.CSRF_COOKIE_NAME, csrfToken, csrfCookieOptions());
+    res.cookie(env.CSRF_COOKIE_NAME, csrfToken, csrfCookieOptions());
   }
   res.json({ authenticated: true, user: req.auth, csrfToken });
 };

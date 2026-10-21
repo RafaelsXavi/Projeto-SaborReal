@@ -9,8 +9,8 @@ if (!process.env.DATABASE_URL) {
   dotenv.config({ path: resolve(process.cwd(), '../../.env') });
 }
 
-const { env } = await import('../dist/config/env.js');
-const { createApp } = await import('../dist/app.js');
+const { env } = await import('../dist/src/config/env.js');
+const { createApp } = await import('../dist/src/app.js');
 
 function parseSetCookie(setCookie) {
   const [pair] = setCookie.split(';', 1);

@@ -61,17 +61,17 @@ Se CI falhar, nao avance pro Render.
 No Render, abra o Shell do servico `saborreal-api` e rode na ordem:
 
 1) Migrations
-- `node apps/api/dist/scripts/migrate.js`
+- `node apps/api/dist/src/scripts/migrate.js`
 
 2) Seed do catalogo
-- `node apps/api/dist/scripts/seed-catalog.js`
+- `node apps/api/dist/src/scripts/seed-catalog.js`
 
 3) Criar admin (1x)
 - Setar no Render (temporariamente) as env vars:
   - `BOOTSTRAP_ADMIN_IDENTIFIER` (email ou telefone)
   - `BOOTSTRAP_ADMIN_PASSWORD` (min 8)
 - Rodar:
-  - `node apps/api/dist/scripts/bootstrap-users.js`
+  - `node apps/api/dist/src/scripts/bootstrap-users.js`
 - Remover `BOOTSTRAP_ADMIN_PASSWORD` depois de confirmar o login.
 
 Obs: o script falha se `DEV_AUTH_ENABLED=true` em producao (intencional).
@@ -101,4 +101,5 @@ Obs: o script falha se `DEV_AUTH_ENABLED=true` em producao (intencional).
 - Web: remover Tailwind CDN e compilar CSS no build (menos requests e mais previsivel).
 - API: habilitar compressao (se o provedor nao fizer) e cache de respostas estaticas (catalog).
 - DB: revisar queries/admin e adicionar paginação quando tiver volume.
+
 

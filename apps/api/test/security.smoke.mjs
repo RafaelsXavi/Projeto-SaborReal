@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 
-import { createApp } from '../dist/app.js';
-import { env } from '../dist/config/env.js';
-import { signAccessToken } from '../dist/modules/auth/jwt.js';
+import { createApp } from '../dist/src/app.js';
+import { env } from '../dist/src/config/env.js';
+import { signAccessToken } from '../dist/src/modules/auth/jwt.js';
 
 function accessTokenFor(user) {
   return signAccessToken({
@@ -157,7 +157,7 @@ await run('RBAC: catalog CRUD requires admin', async () => {
     });
     assert.equal(adminInvalid.status, 400);
     const adminInvalidBody = await adminInvalid.json();
-    assert.equal(adminInvalidBody.error?.code, 'INVALID_INPUT');
+    assert.equal(adminInvalidBody.error?.code, 'INVALID_BODY');
   });
 });
 
